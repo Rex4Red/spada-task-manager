@@ -1,0 +1,102 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  password            String
+  name                String
+  spadaUsername       String?
+  spadaPassword       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  courses             Course[]
+  tasks               Task[]
+  telegramConfig      TelegramConfig?
+  notificationSettings NotificationSettings?
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  sourceId    String
+  name        String
+  url         String
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastSynced  DateTime?
+  isDeleted   Boolean   @default(false)
+
+  @@unique([sourceId, userId])
+}
+
+model Task {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  status        String    @default("PENDING") // PENDING, COMPLETED, OVERDUE
+  deadline      DateTime?
+  url           String?
+  courseId      Int
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  notifications Notification[]
+  
+  isScraped     Boolean   @default(true)
+  isDeleted     Boolean   @default(false)
+  timeRemaining String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([courseId, title])
+}
+
+model TelegramConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  botToken        String
+  chatId          String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationSettings {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @unique
+  thresholdDays     Int       @default(3)
+  quietHoursStart   Int?
+  quietHoursEnd     Int?
+  emailNotification Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id            Int       @id @default(autoincrement())
+  taskId        Int
+  sentAt        DateTime  @default(now())
+  message       String
+  type          String
+  isDelivered   Boolean   @default(false)
+  
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
