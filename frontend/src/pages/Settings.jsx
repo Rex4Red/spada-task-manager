@@ -90,11 +90,15 @@ const Settings = () => {
     const handleTestNotification = async () => {
         setTesting(true);
         try {
-            await api.post('/settings/telegram/test');
+            await api.post('/settings/telegram/test', {
+                chatId: telegramChatId,
+                botToken: telegramBotToken
+            });
             alert('Test notification sent! Check your Telegram.');
         } catch (error) {
             console.error('Test failed:', error);
-            alert('Failed to send test notification. Ensure Bot Token and Chat ID are correct.');
+            const msg = error.response?.data?.message || 'Failed to send test notification. Ensure Bot Token and Chat ID are correct.';
+            alert(msg);
         } finally {
             setTesting(false);
         }
