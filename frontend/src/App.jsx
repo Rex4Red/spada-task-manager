@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
 import MyCourses from './pages/MyCourses';
 import Calendar from './pages/Calendar';
+import Attendance from './pages/Attendance';
 
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -39,6 +40,11 @@ function AppRoutes() {
       <Route path="/calendar" element={
         <PrivateRoute>
           <Calendar />
+        </PrivateRoute>
+      } />
+      <Route path="/attendance" element={
+        <PrivateRoute>
+          <Attendance />
         </PrivateRoute>
       } />
       <Route path="/settings" element={

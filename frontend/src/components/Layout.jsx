@@ -16,6 +16,7 @@ const Layout = ({ children }) => {
     const navItems = [
         { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
         { path: '/my-courses', icon: 'menu_book', label: 'Courses' },
+        { path: '/attendance', icon: 'fingerprint', label: 'Auto Attendance' },
         { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
         { path: '/settings', icon: 'settings', label: 'Settings' },
     ];
