@@ -117,23 +117,35 @@ export class TelegramService {
         const tokenToUse = (userBotToken && userBotToken.trim() !== '') ? userBotToken : this.token;
 
         if (!tokenToUse || tokenToUse === 'optional-default-bot-token') {
+            console.log('[TG Photo] No bot token provided');
             return { success: false, error: 'Bot token not provided' };
         }
 
         try {
             const fs = await import('fs');
-            const FormData = (await import('form-data')).default;
+            const path = await import('path');
 
+            // Check if file exists
+            if (!fs.existsSync(photoPath)) {
+                console.log(`[TG Photo] File not found: ${photoPath}`);
+                return { success: false, error: `Screenshot file not found: ${photoPath}` };
+            }
+
+            console.log(`[TG Photo] Sending photo: ${photoPath}`);
+
+            const FormData = (await import('form-data')).default;
             const formData = new FormData();
             formData.append('chat_id', chatId);
-            formData.append('photo', fs.createReadStream(photoPath));
+            formData.append('photo', fs.createReadStream(photoPath), {
+                filename: path.basename(photoPath),
+                contentType: 'image/png'
+            });
             if (caption) {
                 formData.append('caption', caption);
             }
 
             const tgUrl = `https://api.telegram.org/bot${tokenToUse}/sendPhoto`;
 
-            // Use node-fetch or native fetch with form-data
             const response = await fetch(tgUrl, {
                 method: 'POST',
                 body: formData as any,
@@ -142,12 +154,13 @@ export class TelegramService {
 
             const data = await response.json();
             if (data.ok) {
-                console.log('✅ Telegram photo sent');
+                console.log('[TG Photo] ✅ Photo sent successfully');
                 return { success: true };
             }
+            console.log('[TG Photo] ❌ Failed:', data.description);
             return { success: false, error: data.description || 'Failed to send photo' };
         } catch (e: any) {
-            console.error('Error sending Telegram photo:', e);
+            console.error('[TG Photo] Error:', e.message);
             return { success: false, error: e.message };
         }
     }

@@ -132,30 +132,17 @@ export class SchedulerService {
                 data: { lastRunAt: new Date() }
             });
 
+            // Always calculate next week's run (no retry)
+            const nextRun = this.calculateNextRun(schedule);
+            await prisma.attendanceSchedule.update({
+                where: { id: schedule.id },
+                data: { nextRunAt: nextRun }
+            });
+
             if (result.success || result.status === 'SUCCESS') {
-                // Success! Calculate next week's run
-                const nextRun = this.calculateNextRun(schedule);
-                await prisma.attendanceSchedule.update({
-                    where: { id: schedule.id },
-                    data: { nextRunAt: nextRun }
-                });
                 console.log(`[Attendance] ✅ Success for ${schedule.course.name}`);
-            } else if (result.status === 'NOT_AVAILABLE' && attemptNumber < schedule.maxRetries) {
-                // Schedule retry
-                const retryTime = new Date(Date.now() + schedule.retryIntervalMinutes * 60 * 1000);
-                await prisma.attendanceSchedule.update({
-                    where: { id: schedule.id },
-                    data: { nextRunAt: retryTime }
-                });
-                console.log(`[Attendance] Retry scheduled for ${schedule.course.name} at ${retryTime.toISOString()}`);
             } else {
-                // Max retries reached or failed permanently
-                const nextRun = this.calculateNextRun(schedule);
-                await prisma.attendanceSchedule.update({
-                    where: { id: schedule.id },
-                    data: { nextRunAt: nextRun }
-                });
-                console.log(`[Attendance] ❌ Failed/exhausted retries for ${schedule.course.name}`);
+                console.log(`[Attendance] ⏭️ Skipped to next week for ${schedule.course.name} (${result.status})`);
             }
 
         } catch (error) {
