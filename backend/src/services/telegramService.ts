@@ -111,7 +111,7 @@ export class TelegramService {
     }
 
     /**
-     * Send a photo via Telegram using form-data package
+     * Send a photo via Telegram using Vercel proxy (base64)
      */
     public async sendPhoto(chatId: string, photoPath: string, userBotToken?: string, caption?: string): Promise<{ success: boolean; error?: string }> {
         const tokenToUse = (userBotToken && userBotToken.trim() !== '') ? userBotToken : this.token;
@@ -131,48 +131,58 @@ export class TelegramService {
                 return { success: false, error: `Screenshot file not found: ${photoPath}` };
             }
 
-            console.log(`[TG Photo] Sending photo: ${photoPath}`);
+            console.log(`[TG Photo] Sending photo via Vercel proxy: ${photoPath}`);
 
-            const FormData = (await import('form-data')).default;
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('photo', fs.createReadStream(photoPath), {
-                filename: path.basename(photoPath),
-                contentType: 'image/png'
-            });
-            if (caption) {
-                formData.append('caption', caption);
+            // Read file as base64
+            const fileBuffer = fs.readFileSync(photoPath);
+            const photoBase64 = fileBuffer.toString('base64');
+            const filename = path.basename(photoPath);
+
+            // Get photo proxy URL
+            const photoProxyUrl = this.proxyUrl.replace('/telegram-proxy', '/telegram-photo-proxy');
+
+            if (!photoProxyUrl || !this.proxyUrl) {
+                console.log('[TG Photo] Photo proxy URL not configured');
+                return { success: false, error: 'Photo proxy not configured' };
             }
 
-            // Use form-data's submit method which handles multipart properly
-            return new Promise((resolve) => {
-                formData.submit(`https://api.telegram.org/bot${tokenToUse}/sendPhoto`, (err, res) => {
-                    if (err) {
-                        console.error('[TG Photo] Submit error:', err.message);
-                        resolve({ success: false, error: err.message });
-                        return;
-                    }
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-                    let body = '';
-                    res.on('data', (chunk) => { body += chunk; });
-                    res.on('end', () => {
-                        try {
-                            const data = JSON.parse(body);
-                            if (data.ok) {
-                                console.log('[TG Photo] ✅ Photo sent successfully');
-                                resolve({ success: true });
-                            } else {
-                                console.log('[TG Photo] ❌ Failed:', data.description);
-                                resolve({ success: false, error: data.description || 'Failed to send photo' });
-                            }
-                        } catch (e: any) {
-                            console.error('[TG Photo] Parse error:', e.message);
-                            resolve({ success: false, error: 'Failed to parse response' });
-                        }
-                    });
+            try {
+                const response = await fetch(photoProxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Proxy-Secret': process.env.TELEGRAM_PROXY_SECRET || '',
+                    },
+                    body: JSON.stringify({
+                        botToken: tokenToUse,
+                        chatId,
+                        photoBase64,
+                        caption,
+                        filename
+                    }),
+                    signal: controller.signal,
                 });
-            });
+
+                const data = await response.json();
+
+                if (data.ok) {
+                    console.log('[TG Photo] ✅ Photo sent via Vercel proxy');
+                    return { success: true };
+                } else {
+                    console.log('[TG Photo] ❌ Proxy failed:', data.error);
+                    return { success: false, error: data.error || 'Proxy returned error' };
+                }
+            } finally {
+                clearTimeout(timeoutId);
+            }
         } catch (e: any) {
+            if (e.name === 'AbortError') {
+                console.error('[TG Photo] Timeout');
+                return { success: false, error: 'Photo upload timeout' };
+            }
             console.error('[TG Photo] Error:', e.message);
             return { success: false, error: e.message };
         }
