@@ -57,23 +57,28 @@ const Calendar = () => {
         }
 
         // 2. Fallback: Parse 'timeRemaining' string
-        // Format example: "Assignment is overdue by: 88 days 23 hours"
+        // Format example: "Assignment is overdue by: 1 year 36 days" or "88 days 23 hours"
         if (task.timeRemaining) {
             const text = task.timeRemaining.toLowerCase();
             const anchorDate = task.updatedAt ? new Date(task.updatedAt) : new Date();
 
+            // Parse all time units including years
+            const yearsMatch = text.match(/(\d+)\s+years?/);
+            const monthsMatch = text.match(/(\d+)\s+months?/);
             const daysMatch = text.match(/(\d+)\s+days?/);
             const hoursMatch = text.match(/(\d+)\s+hours?/);
             const minsMatch = text.match(/(\d+)\s+min/); // matches mins or minutes
 
+            const years = yearsMatch ? parseInt(yearsMatch[1]) : 0;
+            const months = monthsMatch ? parseInt(monthsMatch[1]) : 0;
             const days = daysMatch ? parseInt(daysMatch[1]) : 0;
             const hours = hoursMatch ? parseInt(hoursMatch[1]) : 0;
             const minutes = minsMatch ? parseInt(minsMatch[1]) : 0;
 
             // Avoid parsing if no numbers found
-            if (days === 0 && hours === 0 && minutes === 0) return null;
+            if (years === 0 && months === 0 && days === 0 && hours === 0 && minutes === 0) return null;
 
-            const duration = { days, hours, minutes };
+            const duration = { years, months, days, hours, minutes };
 
             if (text.includes('overdue')) {
                 return sub(anchorDate, duration);
