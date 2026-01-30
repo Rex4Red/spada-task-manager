@@ -111,7 +111,7 @@ export class TelegramService {
     }
 
     /**
-     * Send a photo via Telegram
+     * Send a photo via Telegram using form-data package
      */
     public async sendPhoto(chatId: string, photoPath: string, userBotToken?: string, caption?: string): Promise<{ success: boolean; error?: string }> {
         const tokenToUse = (userBotToken && userBotToken.trim() !== '') ? userBotToken : this.token;
@@ -133,32 +133,45 @@ export class TelegramService {
 
             console.log(`[TG Photo] Sending photo: ${photoPath}`);
 
-            // Read file as buffer for better compatibility
-            const fileBuffer = fs.readFileSync(photoPath);
-            const fileName = path.basename(photoPath);
-
-            // Use native FormData with Blob
+            const FormData = (await import('form-data')).default;
             const formData = new FormData();
             formData.append('chat_id', chatId);
-            formData.append('photo', new Blob([fileBuffer], { type: 'image/png' }), fileName);
+            formData.append('photo', fs.createReadStream(photoPath), {
+                filename: path.basename(photoPath),
+                contentType: 'image/png'
+            });
             if (caption) {
                 formData.append('caption', caption);
             }
 
-            const tgUrl = `https://api.telegram.org/bot${tokenToUse}/sendPhoto`;
+            // Use form-data's submit method which handles multipart properly
+            return new Promise((resolve) => {
+                formData.submit(`https://api.telegram.org/bot${tokenToUse}/sendPhoto`, (err, res) => {
+                    if (err) {
+                        console.error('[TG Photo] Submit error:', err.message);
+                        resolve({ success: false, error: err.message });
+                        return;
+                    }
 
-            const response = await fetch(tgUrl, {
-                method: 'POST',
-                body: formData,
+                    let body = '';
+                    res.on('data', (chunk) => { body += chunk; });
+                    res.on('end', () => {
+                        try {
+                            const data = JSON.parse(body);
+                            if (data.ok) {
+                                console.log('[TG Photo] ✅ Photo sent successfully');
+                                resolve({ success: true });
+                            } else {
+                                console.log('[TG Photo] ❌ Failed:', data.description);
+                                resolve({ success: false, error: data.description || 'Failed to send photo' });
+                            }
+                        } catch (e: any) {
+                            console.error('[TG Photo] Parse error:', e.message);
+                            resolve({ success: false, error: 'Failed to parse response' });
+                        }
+                    });
+                });
             });
-
-            const data = await response.json();
-            if (data.ok) {
-                console.log('[TG Photo] ✅ Photo sent successfully');
-                return { success: true };
-            }
-            console.log('[TG Photo] ❌ Failed:', data.description);
-            return { success: false, error: data.description || 'Failed to send photo' };
         } catch (e: any) {
             console.error('[TG Photo] Error:', e.message);
             return { success: false, error: e.message };
