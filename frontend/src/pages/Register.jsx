@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, User, Key, Loader2, GraduationCap } from 'lucide-react';
+import { Lock, Mail, User, Key, Loader2, GraduationCap, Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -11,6 +11,8 @@ const Register = () => {
         spadaUsername: '',
         spadaPassword: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
+    const [showSpadaPassword, setShowSpadaPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { register } = useAuth();
@@ -93,13 +95,20 @@ const Register = () => {
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                             <input
                                 name="password"
-                                type="password"
+                                type={showPassword ? "text" : "password"}
                                 required
                                 value={formData.password}
                                 onChange={handleChange}
-                                className="appearance-none rounded-lg block w-full px-10 py-3 border border-gray-300 dark:border-zinc-600 placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                className="appearance-none rounded-lg block w-full px-10 py-3 pr-12 border border-gray-300 dark:border-zinc-600 placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
                                 placeholder="Password"
                             />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                            >
+                                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                            </button>
                         </div>
 
                         <div className="pt-4">
@@ -121,12 +130,19 @@ const Register = () => {
                                     <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                                     <input
                                         name="spadaPassword"
-                                        type="password"
+                                        type={showSpadaPassword ? "text" : "password"}
                                         value={formData.spadaPassword}
                                         onChange={handleChange}
-                                        className="appearance-none rounded-lg block w-full px-10 py-3 border border-gray-300 dark:border-zinc-600 placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                                        className="appearance-none rounded-lg block w-full px-10 py-3 pr-12 border border-gray-300 dark:border-zinc-600 placeholder-gray-500 text-gray-900 dark:text-white bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
                                         placeholder="SPADA Password"
                                     />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowSpadaPassword(!showSpadaPassword)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                                    >
+                                        {showSpadaPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
                                 </div>
                             </div>
                         </div>
