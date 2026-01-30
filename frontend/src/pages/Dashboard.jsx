@@ -11,8 +11,10 @@ const Dashboard = () => {
     const [filteredTasks, setFilteredTasks] = useState([]); // Filtered list for display
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, done, overdue, urgent
+    const [courseFilter, setCourseFilter] = useState('all'); // 'all' or course id
     const [sort, setSort] = useState('deadline-asc'); // deadline-asc, deadline-desc, newToOld, oldToNew
     const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const [isCourseFilterOpen, setIsCourseFilterOpen] = useState(false);
 
     // Stats
     const [stats, setStats] = useState({
@@ -100,7 +102,12 @@ const Dashboard = () => {
             });
         }
 
-        // 2. Sort
+        // 2. Course Filter
+        if (courseFilter !== 'all') {
+            result = result.filter(t => t.courseId === parseInt(courseFilter));
+        }
+
+        // 3. Sort
         result.sort((a, b) => {
             if (sort === 'deadline-asc') {
                 // Urgent first: Null deadlines last
@@ -116,7 +123,7 @@ const Dashboard = () => {
         });
 
         setFilteredTasks(result);
-    }, [tasks, filter, sort]);
+    }, [tasks, filter, courseFilter, sort]);
 
 
     // Helpers
@@ -345,6 +352,64 @@ const Dashboard = () => {
                                                             <span className={`material-symbols-outlined text-[20px] ${option.color || ''}`}>{option.icon}</span>
                                                             <span>{option.label}</span>
                                                             {filter === option.id && <span className="material-symbols-outlined text-[18px] text-primary ml-auto">check</span>}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Course Filter Dropdown */}
+                                    <div className="relative w-full sm:w-auto">
+                                        <button
+                                            onClick={() => setIsCourseFilterOpen(!isCourseFilterOpen)}
+                                            className="flex items-center gap-2 px-3 py-2 bg-[#283039] border border-[#3b4754] rounded-lg text-sm text-white hover:bg-[#3b4754] transition-colors cursor-pointer w-full sm:min-w-[180px] justify-between"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-[18px]">menu_book</span>
+                                                <span className="truncate max-w-[120px]">
+                                                    {courseFilter === 'all'
+                                                        ? 'All Courses'
+                                                        : courses.find(c => c.id === parseInt(courseFilter))?.name || 'Course'}
+                                                </span>
+                                            </div>
+                                            <span className={`material-symbols-outlined text-[18px] text-[#9dabb9] transition-transform duration-200 ${isCourseFilterOpen ? 'rotate-180' : ''}`}>expand_more</span>
+                                        </button>
+
+                                        {isCourseFilterOpen && (
+                                            <>
+                                                <div className="fixed inset-0 z-10" onClick={() => setIsCourseFilterOpen(false)}></div>
+                                                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-full sm:w-72 bg-card-dark border border-[#3b4754] rounded-lg shadow-xl z-20 overflow-hidden flex flex-col py-1 max-h-64 overflow-y-auto">
+                                                    {/* All Courses Option */}
+                                                    <button
+                                                        onClick={() => {
+                                                            setCourseFilter('all');
+                                                            setIsCourseFilterOpen(false);
+                                                        }}
+                                                        className={`flex items-center gap-3 px-4 py-3 text-sm hover:bg-[#283039] transition-colors text-left ${courseFilter === 'all' ? 'text-white bg-[#283039]' : 'text-[#9dabb9]'}`}
+                                                    >
+                                                        <span className="material-symbols-outlined text-[20px]">apps</span>
+                                                        <span>All Courses</span>
+                                                        {courseFilter === 'all' && <span className="material-symbols-outlined text-[18px] text-primary ml-auto">check</span>}
+                                                    </button>
+
+                                                    {/* Divider */}
+                                                    <div className="h-px bg-[#3b4754] mx-2 my-1"></div>
+
+                                                    {/* Course List */}
+                                                    {courses.map(course => (
+                                                        <button
+                                                            key={course.id}
+                                                            onClick={() => {
+                                                                setCourseFilter(course.id.toString());
+                                                                setIsCourseFilterOpen(false);
+                                                            }}
+                                                            className={`flex items-center gap-3 px-4 py-3 text-sm hover:bg-[#283039] transition-colors text-left ${courseFilter === course.id.toString() ? 'text-white bg-[#283039]' : 'text-[#9dabb9]'}`}
+                                                        >
+                                                            <span className="material-symbols-outlined text-[20px] text-primary">school</span>
+                                                            <span className="truncate flex-1">{course.name}</span>
+                                                            <span className="text-xs text-[#64748b] shrink-0">({course.tasks?.length || 0})</span>
+                                                            {courseFilter === course.id.toString() && <span className="material-symbols-outlined text-[18px] text-primary ml-1">check</span>}
                                                         </button>
                                                     ))}
                                                 </div>
