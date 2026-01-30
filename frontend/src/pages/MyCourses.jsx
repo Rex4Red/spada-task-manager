@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
+import AttendanceScheduleForm from '../components/AttendanceScheduleForm';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,6 +16,7 @@ const MyCourses = () => {
     const [spadaUsername, setSpadaUsername] = useState(''); // Need to get this from user/db?
     const [spadaPassword, setSpadaPassword] = useState('');
     const [showHelp, setShowHelp] = useState(false);
+    const [expandedCourseId, setExpandedCourseId] = useState(null);
 
     // Fetch courses
     const fetchCourses = async () => {
@@ -190,7 +192,7 @@ const MyCourses = () => {
                             {courses.map(course => {
                                 const activeTasks = course.tasks.filter(t => t.status !== 'COMPLETED').length;
                                 return (
-                                    <div key={course.id} className="flex flex-col bg-card-dark rounded-xl border border-[#283039] overflow-hidden hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-black/20 group">
+                                    <div key={course.id} className={`flex flex-col bg-card-dark rounded-xl border border-[#283039] overflow-hidden hover:border-primary/30 transition-all hover:shadow-lg hover:shadow-black/20 group ${expandedCourseId === course.id ? 'md:col-span-2 xl:col-span-3' : ''}`}>
                                         <div className="h-24 bg-[#283039] relative overflow-hidden">
                                             {/* Random gradient based on ID */}
                                             <div className={`absolute inset-0 bg-gradient-to-br ${course.id % 4 === 0 ? 'from-blue-900/40' :
@@ -229,6 +231,13 @@ const MyCourses = () => {
                                                 </span>
                                                 <div className="flex items-center gap-2">
                                                     <button
+                                                        onClick={() => setExpandedCourseId(expandedCourseId === course.id ? null : course.id)}
+                                                        className="text-[#9dabb9] hover:text-green-400 transition-colors flex items-center justify-center p-1.5 rounded-lg hover:bg-green-500/10"
+                                                        title="Auto Attendance Settings"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">event_available</span>
+                                                    </button>
+                                                    <button
                                                         onClick={() => handleDeleteCourse(course.id)}
                                                         className="text-[#9dabb9] hover:text-red-500 transition-colors flex items-center justify-center p-1.5 rounded-lg hover:bg-red-500/10"
                                                         title="Delete Course"
@@ -245,6 +254,13 @@ const MyCourses = () => {
                                                     </button>
                                                 </div>
                                             </div>
+
+                                            {/* Expanded Attendance Section */}
+                                            {expandedCourseId === course.id && (
+                                                <div className="mt-4 pt-4 border-t border-[#283039]">
+                                                    <AttendanceScheduleForm courseId={course.id} courseName={course.name} />
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );

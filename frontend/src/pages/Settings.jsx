@@ -85,8 +85,6 @@ const Settings = () => {
         }
     };
 
-    // ... (keep handleTestNotification as is, or updated in next block)
-
     const handleTestNotification = async () => {
         setTesting(true);
         try {

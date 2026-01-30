@@ -1,6 +1,12 @@
 import dotenv from 'dotenv';
+import dns from 'dns';
 // Force restart for Prisma Client update
 dotenv.config();
+
+// Fix for ENOTFOUND api.telegram.org in Node 17+ (forces IPv4)
+if (dns.setDefaultResultOrder) {
+    dns.setDefaultResultOrder('ipv4first');
+}
 
 import express from 'express';
 import cors from 'cors';
@@ -11,6 +17,7 @@ import scraperRoutes from './routes/scraperRoutes';
 import courseRoutes from './routes/courseRoutes';
 import taskRoutes from './routes/taskRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import attendanceRoutes from './routes/attendanceRoutes';
 
 // Services
 import { TelegramService } from './services/telegramService';
@@ -38,13 +45,14 @@ app.use('/api/scraper', scraperRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Base route
 app.get('/', (req, res) => {
     res.send('SPADA Task Manager API is running');
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 7860;
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

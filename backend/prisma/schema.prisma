@@ -34,6 +34,7 @@ model Course {
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   tasks       Task[]
+  attendanceSchedule  AttendanceSchedule?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   lastSynced  DateTime?
@@ -99,4 +100,38 @@ model Notification {
   isDelivered   Boolean   @default(false)
   
   task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// Auto Attendance Models
+model AttendanceSchedule {
+  id                    Int       @id @default(autoincrement())
+  courseId              Int       @unique
+  scheduleType          String    @default("SIMPLE") // SIMPLE or CRON
+  dayOfWeek             Int?      // 0-6 (Sun-Sat) for SIMPLE mode
+  timeOfDay             String?   // "HH:mm" format for SIMPLE mode
+  cronExpression        String?   // For advanced users
+  maxRetries            Int       @default(6)
+  retryIntervalMinutes  Int       @default(5)
+  isActive              Boolean   @default(true)
+  useSeparateTelegram   Boolean   @default(false)
+  customBotToken        String?   // Only bot token needed, Chat ID from user's TelegramConfig
+  lastRunAt             DateTime?
+  nextRunAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  course                Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  logs                  AttendanceLog[]
+}
+
+model AttendanceLog {
+  id            Int       @id @default(autoincrement())
+  scheduleId    Int
+  attemptedAt   DateTime  @default(now())
+  attemptNumber Int       // 1-6 (which retry attempt)
+  status        String    // SUCCESS, FAILED, NOT_AVAILABLE, TIMEOUT, ERROR
+  message       String?
+  screenshotUrl String?   // Path to screenshot file
+  
+  schedule      AttendanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 }

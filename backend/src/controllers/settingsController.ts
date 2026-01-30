@@ -63,25 +63,33 @@ export const getSettings = async (req: Request, res: Response) => {
 
 export const testTelegramNotification = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
+    // Prefer values from request body (for testing before saving), otherwise fetch from DB
+    const { chatId: bodyChatId, botToken: bodyBotToken } = req.body;
 
     try {
-        const config = await prisma.telegramConfig.findUnique({ where: { userId } });
+        let targetChatId = bodyChatId;
+        let targetBotToken = bodyBotToken;
 
-        if (!config || !config.chatId) {
-            res.status(400).json({ message: 'Telegram Chat ID not configured' });
-            return;
+        if (!targetChatId) {
+            const config = await prisma.telegramConfig.findUnique({ where: { userId } });
+            if (!config || !config.chatId) {
+                res.status(400).json({ message: 'Telegram Chat ID not provided and not configured' });
+                return;
+            }
+            targetChatId = config.chatId;
+            targetBotToken = targetBotToken || config.botToken;
         }
 
-        const success = await telegramService.sendMessage(
-            config.chatId,
+        const result = await telegramService.sendMessage(
+            targetChatId,
             '🔔 *Test Notification*\n\nThis is a test message from SPADA Task Manager. If you see this, your integration is working! 🚀',
-            config.botToken
+            targetBotToken
         );
 
-        if (success) {
+        if (result.success) {
             res.json({ message: 'Test notification sent successfully' });
         } else {
-            res.status(500).json({ message: 'Failed to send notification via Telegram' });
+            res.status(500).json({ message: `Failed: ${result.error}` });
         }
 
     } catch (error) {
