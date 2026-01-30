@@ -13,9 +13,16 @@ const Layout = ({ children }) => {
         navigate('/login');
     };
 
+    const navItems = [
+        { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
+        { path: '/my-courses', icon: 'menu_book', label: 'Courses' },
+        { path: '/calendar', icon: 'calendar_month', label: 'Calendar' },
+        { path: '/settings', icon: 'settings', label: 'Settings' },
+    ];
+
     return (
         <div className="flex h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden text-slate-900 dark:text-white font-display">
-            {/* Sidebar */}
+            {/* Sidebar - Desktop Only */}
             <aside className="hidden md:flex w-72 flex-col border-r border-[#3b4754] bg-[#111418] dark:bg-card-dark p-4 justify-between h-full">
                 <div className="flex flex-col gap-6">
                     {/* Brand / Logo */}
@@ -29,53 +36,23 @@ const Layout = ({ children }) => {
 
                     {/* Navigation */}
                     <div className="flex flex-col gap-2">
-                        <Link
-                            to="/dashboard"
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${isActive('/dashboard')
-                                ? 'bg-primary/15 border-l-4 border-primary'
-                                : 'hover:bg-[#283039]'
-                                }`}
-                        >
-                            <span className={`material-symbols-outlined ${isActive('/dashboard') ? 'text-primary filled-icon' : 'text-[#9dabb9] group-hover:text-white'}`}>dashboard</span>
-                            <p className={`${isActive('/dashboard') ? 'text-white' : 'text-[#9dabb9] group-hover:text-white'} text-sm font-medium leading-normal`}>Dashboard</p>
-                        </Link>
-
-                        <Link
-                            to="/my-courses"
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${isActive('/my-courses')
-                                ? 'bg-primary/15 border-l-4 border-primary'
-                                : 'hover:bg-[#283039]'
-                                }`}
-                        >
-                            <span className={`material-symbols-outlined ${isActive('/my-courses') ? 'text-primary filled-icon' : 'text-[#9dabb9] group-hover:text-white'}`}>menu_book</span>
-                            <p className={`${isActive('/my-courses') ? 'text-white' : 'text-[#9dabb9] group-hover:text-white'} text-sm font-medium leading-normal`}>My Courses</p>
-                        </Link>
-
-                        <Link
-                            to="/calendar"
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${isActive('/calendar')
-                                ? 'bg-primary/15 border-l-4 border-primary'
-                                : 'hover:bg-[#283039]'
-                                }`}
-                        >
-                            <span className={`material-symbols-outlined ${isActive('/calendar') ? 'text-primary filled-icon' : 'text-[#9dabb9] group-hover:text-white'}`}>calendar_month</span>
-                            <p className={`${isActive('/calendar') ? 'text-white' : 'text-[#9dabb9] group-hover:text-white'} text-sm font-medium leading-normal`}>Calendar</p>
-                        </Link>
-
-                        <Link
-                            to="/settings"
-                            className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${isActive('/settings')
-                                ? 'bg-primary/15 border-l-4 border-primary'
-                                : 'hover:bg-[#283039]'
-                                }`}
-                        >
-                            <span className={`material-symbols-outlined ${isActive('/settings') ? 'text-primary filled-icon' : 'text-[#9dabb9] group-hover:text-white'}`}>settings</span>
-                            <p className={`${isActive('/settings') ? 'text-white' : 'text-[#9dabb9] group-hover:text-white'} text-sm font-medium leading-normal`}>Settings</p>
-                        </Link>
+                        {navItems.map(item => (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-colors group ${isActive(item.path)
+                                    ? 'bg-primary/15 border-l-4 border-primary'
+                                    : 'hover:bg-[#283039]'
+                                    }`}
+                            >
+                                <span className={`material-symbols-outlined ${isActive(item.path) ? 'text-primary filled-icon' : 'text-[#9dabb9] group-hover:text-white'}`}>{item.icon}</span>
+                                <p className={`${isActive(item.path) ? 'text-white' : 'text-[#9dabb9] group-hover:text-white'} text-sm font-medium leading-normal`}>{item.label}</p>
+                            </Link>
+                        ))}
                     </div>
                 </div>
 
-                {/* Bottom Actions */}
+                {/* Bottom Actions - Desktop */}
                 <div className="flex flex-col gap-2 border-t border-[#3b4754] pt-4">
                     <div className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-[#283039] transition-colors group">
                         <div className="relative">
@@ -98,9 +75,34 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full overflow-y-auto">
+            <main className="flex-1 flex flex-col h-full overflow-y-auto pb-20 md:pb-0">
                 {children}
             </main>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around bg-[#111418] border-t border-[#3b4754] h-16 px-2 safe-area-bottom">
+                {navItems.map(item => (
+                    <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive(item.path)
+                            ? 'text-primary'
+                            : 'text-[#9dabb9]'
+                            }`}
+                    >
+                        <span className={`material-symbols-outlined text-[22px] ${isActive(item.path) ? 'filled-icon' : ''}`}>{item.icon}</span>
+                        <span className="text-[10px] font-medium">{item.label}</span>
+                    </Link>
+                ))}
+                {/* Logout button on mobile */}
+                <button
+                    onClick={handleLogout}
+                    className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-[#9dabb9] hover:text-red-400 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[22px]">logout</span>
+                    <span className="text-[10px] font-medium">Logout</span>
+                </button>
+            </nav>
         </div>
     );
 };
