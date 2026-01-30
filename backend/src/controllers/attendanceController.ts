@@ -258,6 +258,7 @@ export const getLogs = async (req: Request, res: Response) => {
 
 /**
  * Helper: Calculate next run time based on schedule
+ * Uses WIB timezone (UTC+7) for Indonesia
  */
 function calculateNextRun(
     scheduleType: string,
@@ -265,28 +266,41 @@ function calculateNextRun(
     timeOfDay?: string,
     cronExpression?: string
 ): Date | null {
-    const now = new Date();
+    // WIB offset in milliseconds (UTC+7)
+    const WIB_OFFSET = 7 * 60 * 60 * 1000;
 
     if (scheduleType === 'SIMPLE' && dayOfWeek !== undefined && timeOfDay) {
         const [hours, minutes] = timeOfDay.split(':').map(Number);
-        const targetDate = new Date(now);
 
-        // Find next occurrence of the target day
-        const currentDay = now.getDay();
-        let daysUntilTarget = dayOfWeek - currentDay;
+        // Get current time in WIB
+        const nowUTC = new Date();
+        const nowWIB = new Date(nowUTC.getTime() + WIB_OFFSET);
+
+        // Calculate in WIB timezone
+        const currentDayWIB = nowWIB.getUTCDay();
+        const currentHourWIB = nowWIB.getUTCHours();
+        const currentMinuteWIB = nowWIB.getUTCMinutes();
+
+        let daysUntilTarget = dayOfWeek - currentDayWIB;
         if (daysUntilTarget < 0) daysUntilTarget += 7;
         if (daysUntilTarget === 0) {
             // Same day, check if time has passed
             const targetTime = hours * 60 + minutes;
-            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const currentTime = currentHourWIB * 60 + currentMinuteWIB;
             if (currentTime >= targetTime) {
                 daysUntilTarget = 7; // Next week
             }
         }
 
-        targetDate.setDate(now.getDate() + daysUntilTarget);
-        targetDate.setHours(hours, minutes, 0, 0);
-        return targetDate;
+        // Create target date in WIB
+        const targetWIB = new Date(nowWIB);
+        targetWIB.setUTCDate(nowWIB.getUTCDate() + daysUntilTarget);
+        targetWIB.setUTCHours(hours, minutes, 0, 0);
+
+        // Convert back to UTC for storage
+        const targetUTC = new Date(targetWIB.getTime() - WIB_OFFSET);
+
+        return targetUTC;
     }
 
     // For CRON type, we'd need a cron parser - simplified for now
