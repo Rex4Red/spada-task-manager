@@ -133,13 +133,14 @@ export class TelegramService {
 
             console.log(`[TG Photo] Sending photo: ${photoPath}`);
 
-            const FormData = (await import('form-data')).default;
+            // Read file as buffer for better compatibility
+            const fileBuffer = fs.readFileSync(photoPath);
+            const fileName = path.basename(photoPath);
+
+            // Use native FormData with Blob
             const formData = new FormData();
             formData.append('chat_id', chatId);
-            formData.append('photo', fs.createReadStream(photoPath), {
-                filename: path.basename(photoPath),
-                contentType: 'image/png'
-            });
+            formData.append('photo', new Blob([fileBuffer], { type: 'image/png' }), fileName);
             if (caption) {
                 formData.append('caption', caption);
             }
@@ -148,8 +149,7 @@ export class TelegramService {
 
             const response = await fetch(tgUrl, {
                 method: 'POST',
-                body: formData as any,
-                headers: formData.getHeaders ? formData.getHeaders() : {},
+                body: formData,
             });
 
             const data = await response.json();
