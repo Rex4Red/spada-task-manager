@@ -300,12 +300,12 @@ export class AttendanceService {
             `📊 Status: ${result.status}\n` +
             `💬 ${result.message}`;
 
-        // Send text message
-        await telegramService.sendMessage(chatId, message, botToken);
-
-        // Send screenshot if available
+        // Send screenshot first if available
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
-            await telegramService.sendPhoto(chatId, result.screenshotPath, botToken);
+            await telegramService.sendPhoto(chatId, result.screenshotPath, botToken, `📸 Screenshot: ${courseName}`);
         }
+
+        // Then send text message
+        await telegramService.sendMessage(chatId, message, botToken);
     }
 }
