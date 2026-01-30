@@ -12,6 +12,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all'); // all, done, overdue, urgent
     const [courseFilter, setCourseFilter] = useState('all'); // 'all' or course id
+    const [searchQuery, setSearchQuery] = useState(''); // search query
     const [sort, setSort] = useState('deadline-asc'); // deadline-asc, deadline-desc, newToOld, oldToNew
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isCourseFilterOpen, setIsCourseFilterOpen] = useState(false);
@@ -107,7 +108,16 @@ const Dashboard = () => {
             result = result.filter(t => t.courseId === parseInt(courseFilter));
         }
 
-        // 3. Sort
+        // 3. Search Filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            result = result.filter(t =>
+                t.title?.toLowerCase().includes(query) ||
+                t.courseName?.toLowerCase().includes(query)
+            );
+        }
+
+        // 4. Sort
         result.sort((a, b) => {
             if (sort === 'deadline-asc') {
                 // Urgent first: Null deadlines last
@@ -123,7 +133,7 @@ const Dashboard = () => {
         });
 
         setFilteredTasks(result);
-    }, [tasks, filter, courseFilter, sort]);
+    }, [tasks, filter, courseFilter, searchQuery, sort]);
 
 
     // Helpers
@@ -417,10 +427,24 @@ const Dashboard = () => {
                                         )}
                                     </div>
 
-                                    {/* Search (Simplified visual) */}
+                                    {/* Search */}
                                     <div className="relative flex-grow sm:flex-grow-0">
                                         <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-[#9dabb9] text-[18px]">search</span>
-                                        <input className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#283039] border border-[#3b4754] rounded-lg text-white text-sm placeholder-[#64748b] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary" placeholder="Search tasks (coming soon...)" type="text" disabled />
+                                        <input
+                                            className="w-full sm:w-64 pl-10 pr-4 py-2 bg-[#283039] border border-[#3b4754] rounded-lg text-white text-sm placeholder-[#64748b] focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                                            placeholder="Search tasks or courses..."
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9dabb9] hover:text-white"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
