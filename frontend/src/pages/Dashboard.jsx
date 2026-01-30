@@ -306,10 +306,10 @@ const Dashboard = () => {
                                 <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
 
                                     {/* Custom Filter Dropdown */}
-                                    <div className="relative">
+                                    <div className="relative w-full sm:w-auto">
                                         <button
                                             onClick={() => setIsFilterOpen(!isFilterOpen)}
-                                            className="flex items-center gap-2 px-3 py-2 bg-[#283039] border border-[#3b4754] rounded-lg text-sm text-white hover:bg-[#3b4754] transition-colors cursor-pointer min-w-[180px] justify-between"
+                                            className="flex items-center gap-2 px-3 py-2 bg-[#283039] border border-[#3b4754] rounded-lg text-sm text-white hover:bg-[#3b4754] transition-colors cursor-pointer w-full sm:min-w-[180px] justify-between"
                                         >
                                             <div className="flex items-center gap-2">
                                                 <span className="material-symbols-outlined text-[18px]">filter_list</span>
@@ -326,7 +326,7 @@ const Dashboard = () => {
                                         {isFilterOpen && (
                                             <>
                                                 <div className="fixed inset-0 z-10" onClick={() => setIsFilterOpen(false)}></div>
-                                                <div className="absolute right-0 top-full mt-2 w-64 bg-card-dark border border-[#3b4754] rounded-lg shadow-xl z-20 overflow-hidden flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100">
+                                                <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-full sm:w-64 bg-card-dark border border-[#3b4754] rounded-lg shadow-xl z-20 overflow-hidden flex flex-col py-1 animate-in fade-in zoom-in-95 duration-100">
                                                     {[
                                                         { id: 'all', label: 'All Tasks', icon: 'list' },
                                                         { id: 'urgent', label: 'Urgent (< 3 Days)', icon: 'notification_important', color: 'text-upn-gold' },
