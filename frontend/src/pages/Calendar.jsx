@@ -121,23 +121,23 @@ const Calendar = () => {
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden">
+                <div className="flex flex-col lg:flex-row gap-6">
                     {/* Calendar Grid */}
-                    <div className="flex-1 bg-[#161e27] rounded-3xl border border-[#283039] p-6 flex flex-col shadow-2xl relative overflow-hidden">
+                    <div className="flex-1 bg-[#161e27] rounded-3xl border border-[#283039] p-4 md:p-6 flex flex-col shadow-2xl relative overflow-visible">
                         {/* Glow Effect */}
                         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2"></div>
 
                         {/* Days Header */}
-                        <div className="grid grid-cols-7 mb-4">
+                        <div className="grid grid-cols-7 mb-2">
                             {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                                <div key={day} className="text-[#586572] text-xs font-bold uppercase tracking-wider text-center py-2">
+                                <div key={day} className="text-[#586572] text-[10px] md:text-xs font-bold uppercase tracking-wider text-center py-2">
                                     {day}
                                 </div>
                             ))}
                         </div>
 
                         {/* Days Grid */}
-                        <div className="grid grid-cols-7 grid-rows-6 gap-2 flex-1">
+                        <div className="grid grid-cols-7 gap-1 md:gap-2">
                             {calendarDays.map((day, idx) => {
                                 const dayTasks = getTasksForDate(day);
                                 const isSelected = isSameDay(day, selectedDate);
@@ -149,35 +149,34 @@ const Calendar = () => {
                                         key={idx}
                                         onClick={() => setSelectedDate(day)}
                                         className={`
-                                            relative rounded-2xl p-2 flex flex-col items-center justify-start gap-1 transition-all duration-300
+                                            relative rounded-lg md:rounded-2xl aspect-square p-1 md:p-2 flex flex-col items-center justify-center gap-0.5 transition-all duration-300
                                             ${!isCurrentMonth ? 'opacity-30' : 'hover:bg-[#1e252e]'}
                                             ${isSelected ? 'bg-gradient-to-br from-blue-600 to-blue-800 text-white shadow-lg shadow-blue-900/50 scale-[1.02] border-none' : 'border border-transparent'}
                                             ${isTodayDate && !isSelected ? 'border-[#3b4754] bg-[#1e252e]' : ''}
                                         `}
                                     >
-                                        <span className={`text-sm font-bold ${isSelected ? 'text-white' : 'text-[#9dabb9]'}`}>
+                                        <span className={`text-xs md:text-sm font-bold ${isSelected ? 'text-white' : 'text-[#9dabb9]'}`}>
                                             {format(day, 'd')}
                                         </span>
 
-                                        {/* Task Indicators */}
-                                        <div className="flex gap-1 mt-1 flex-wrap justify-center content-start w-full px-2">
-                                            {dayTasks.map((t, i) => {
-                                                if (i > 3) return null; // Limit dots
+                                        {/* Task Indicators - hidden on very small screens */}
+                                        <div className="hidden md:flex gap-0.5 flex-wrap justify-center">
+                                            {dayTasks.slice(0, 3).map((t, i) => {
                                                 const isUrgent = t.timeRemaining?.toLowerCase().includes('hour') || t.timeRemaining?.toLowerCase().includes('1 day');
-                                                // Color logic
                                                 let dotColor = 'bg-gray-500';
                                                 if (t.status === 'COMPLETED') dotColor = 'bg-green-500';
                                                 else if (isUrgent) dotColor = 'bg-red-500';
                                                 else dotColor = 'bg-yellow-500';
 
                                                 return (
-                                                    <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/80' : dotColor} shadow-sm`} />
+                                                    <div key={i} className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white/80' : dotColor}`} />
                                                 )
                                             })}
-                                            {dayTasks.length > 4 && (
-                                                <span className="text-[8px] text-[#586572] leading-none">+</span>
-                                            )}
                                         </div>
+                                        {/* Mobile: just show count if tasks exist */}
+                                        {dayTasks.length > 0 && (
+                                            <div className="md:hidden w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                        )}
                                     </button>
                                 );
                             })}
@@ -185,7 +184,7 @@ const Calendar = () => {
                     </div>
 
                     {/* Side Panel (Selected Date) */}
-                    <div className="w-full lg:w-96 bg-[#161e27] rounded-3xl border border-[#283039] p-6 flex flex-col shadow-2xl h-full">
+                    <div className="w-full lg:w-96 bg-[#161e27] rounded-3xl border border-[#283039] p-6 flex flex-col shadow-2xl min-h-[300px] lg:min-h-0">
                         <div className="flex flex-col gap-1 pb-6 border-b border-[#283039]">
                             <h2 className="text-white text-xl font-bold">{format(selectedDate, 'EEEE')}</h2>
                             <p className="text-[#9dabb9] text-base">{format(selectedDate, 'MMMM do, yyyy')}</p>

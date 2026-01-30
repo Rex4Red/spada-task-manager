@@ -144,8 +144,8 @@ const MyCourses = () => {
                             </h2>
                             <p className="text-[#9dabb9] text-sm md:text-base">Paste your SPADA UPN Yogyakarta course URL to automatically fetch syllabus and assignments.</p>
                         </div>
-                        <form onSubmit={handleAddCourse} className="flex flex-col sm:flex-row w-full h-auto sm:h-14 gap-2 sm:gap-0">
-                            <div className="flex w-full flex-1 items-center rounded-lg sm:rounded-r-none bg-[#283039] border border-transparent focus-within:border-primary/50 transition-colors h-12 sm:h-full px-4 gap-3">
+                        <form onSubmit={handleAddCourse} className="flex flex-col w-full gap-3">
+                            <div className="flex w-full items-center rounded-xl bg-[#283039] border border-transparent focus-within:border-primary/50 transition-colors h-14 px-4 gap-3">
                                 <span className="material-symbols-outlined text-[#9dabb9]">link</span>
                                 <input
                                     className="bg-transparent w-full text-white placeholder:text-[#5e6a75] text-sm focus:outline-none h-full"
@@ -157,7 +157,7 @@ const MyCourses = () => {
                             <button
                                 type="submit"
                                 disabled={syncingNew}
-                                className={`h-12 sm:h-full px-6 bg-primary hover:bg-blue-600 text-white font-bold rounded-lg sm:rounded-l-none transition-colors flex items-center justify-center gap-2 shrink-0 ${syncingNew ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                className={`h-14 w-full px-6 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${syncingNew ? 'opacity-70 cursor-not-allowed' : ''}`}
                             >
                                 <span className={`material-symbols-outlined text-[20px] ${syncingNew ? 'animate-spin' : ''}`}>{syncingNew ? 'sync' : 'add'}</span>
                                 <span>{syncingNew ? 'Adding...' : 'Add Course'}</span>
