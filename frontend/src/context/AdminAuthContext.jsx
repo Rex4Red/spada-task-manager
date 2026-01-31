@@ -18,7 +18,7 @@ export const AdminAuthProvider = ({ children }) => {
             }
 
             try {
-                const res = await fetch(`${API_URL}/api/admin/auth/verify`, {
+                const res = await fetch(`${API_URL}/admin/auth/verify`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 const data = await res.json();
@@ -41,7 +41,7 @@ export const AdminAuthProvider = ({ children }) => {
 
     const login = async (username, password) => {
         try {
-            const res = await fetch(`${API_URL}/api/admin/auth/login`, {
+            const res = await fetch(`${API_URL}/admin/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
