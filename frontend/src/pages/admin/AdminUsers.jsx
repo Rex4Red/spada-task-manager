@@ -12,7 +12,7 @@ const AdminUsers = () => {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7860';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
 
     useEffect(() => {
         fetchUsers();
@@ -27,7 +27,7 @@ const AdminUsers = () => {
                 ...(searchQuery && { search: searchQuery })
             });
 
-            const res = await fetch(`${API_URL}/api/admin/users?${params}`, {
+            const res = await fetch(`${API_URL}/admin/users?${params}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -56,7 +56,7 @@ const AdminUsers = () => {
 
         setDeleting(userId);
         try {
-            const res = await fetch(`${API_URL}/api/admin/users/${userId}`, {
+            const res = await fetch(`${API_URL}/admin/users/${userId}`, {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });

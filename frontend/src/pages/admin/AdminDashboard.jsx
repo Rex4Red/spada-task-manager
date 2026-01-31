@@ -10,7 +10,7 @@ const AdminDashboard = () => {
     const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7860';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
 
     useEffect(() => {
         fetchData();
@@ -21,9 +21,9 @@ const AdminDashboard = () => {
             const headers = { Authorization: `Bearer ${token}` };
 
             const [statsRes, usersRes, activityRes] = await Promise.all([
-                fetch(`${API_URL}/api/admin/stats`, { headers }),
-                fetch(`${API_URL}/api/admin/users?limit=5`, { headers }),
-                fetch(`${API_URL}/api/admin/activity?limit=5`, { headers })
+                fetch(`${API_URL}/admin/stats`, { headers }),
+                fetch(`${API_URL}/admin/users?limit=5`, { headers }),
+                fetch(`${API_URL}/admin/activity?limit=5`, { headers })
             ]);
 
             const statsData = await statsRes.json();
@@ -121,8 +121,8 @@ const AdminDashboard = () => {
                                         recentActivity.map(log => (
                                             <div key={log.id} className="flex items-center gap-3 p-3 rounded-lg bg-[#0d1117]">
                                                 <div className={`size-8 rounded-full flex items-center justify-center ${log.status === 'SUCCESS' ? 'bg-green-500/20 text-green-400' :
-                                                        log.status === 'NOT_AVAILABLE' ? 'bg-yellow-500/20 text-yellow-400' :
-                                                            'bg-red-500/20 text-red-400'
+                                                    log.status === 'NOT_AVAILABLE' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                        'bg-red-500/20 text-red-400'
                                                     }`}>
                                                     <span className="material-symbols-outlined text-lg">
                                                         {log.status === 'SUCCESS' ? 'check_circle' :
