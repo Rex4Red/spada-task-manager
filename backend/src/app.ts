@@ -18,6 +18,7 @@ import courseRoutes from './routes/courseRoutes';
 import taskRoutes from './routes/taskRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
+import adminRoutes from './routes/adminRoutes';
 
 // Services
 import { TelegramService } from './services/telegramService';
@@ -46,6 +47,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Base route
 app.get('/', (req, res) => {
