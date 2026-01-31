@@ -271,6 +271,23 @@ const Settings = () => {
                         <h3 className="text-white text-xl font-bold">How to get Telegram Credentials</h3>
 
                         <div className="flex flex-col gap-4 overflow-y-auto max-h-[60vh] pr-2">
+                            {/* Video Tutorial */}
+                            <div className="flex flex-col gap-2">
+                                <h4 className="text-primary font-bold text-sm uppercase tracking-wider">Video Tutorial</h4>
+                                <div className="relative w-full pt-[56.25%] rounded-lg overflow-hidden border border-[#3b4754]">
+                                    <iframe
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        src="https://www.youtube.com/embed/4uLoLyaA85I"
+                                        title="Telegram Credentials Tutorial"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-[#3b4754] w-full"></div>
+
                             {/* Step 1 */}
                             <div className="flex flex-col gap-2">
                                 <h4 className="text-primary font-bold text-sm uppercase tracking-wider">1. Get Bot Token</h4>
