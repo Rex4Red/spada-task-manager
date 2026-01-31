@@ -285,6 +285,23 @@ const MyCourses = () => {
                         </div>
 
                         <div className="flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
+                            {/* Video Tutorial */}
+                            <div className="flex flex-col gap-2">
+                                <h4 className="text-primary font-bold text-sm uppercase tracking-wider">Video Tutorial</h4>
+                                <div className="relative w-full pt-[56.25%] rounded-lg overflow-hidden border border-[#3b4754]">
+                                    <iframe
+                                        className="absolute top-0 left-0 w-full h-full"
+                                        src="https://www.youtube.com/embed/3WqNt8aYgas"
+                                        title="How to Find Course URL Tutorial"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                    ></iframe>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-[#3b4754] w-full"></div>
+
                             {/* Step 1 */}
                             <div className="flex flex-col gap-2">
                                 <div className="flex items-center gap-2">
