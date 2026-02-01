@@ -22,9 +22,23 @@ const Layout = ({ children }) => {
     ];
 
     return (
-        <div className="flex h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden text-slate-900 dark:text-white font-display">
+        <div className="flex flex-col md:flex-row h-screen w-full bg-background-light dark:bg-background-dark overflow-hidden text-slate-900 dark:text-white font-display">
+            {/* Mobile Header - Mobile Only */}
+            <header className="flex md:hidden items-center justify-between bg-[#111418] border-b border-[#3b4754] px-4 py-3 shrink-0">
+                <div className="flex items-center gap-2">
+                    <img src="/logo_upn.png" alt="UPN Logo" className="size-8 object-contain" />
+                    <h1 className="text-white text-base font-bold">Spada Task Manager</h1>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-red-400 text-xl">logout</span>
+                </button>
+            </header>
+
             {/* Sidebar - Desktop Only */}
-            <aside className="hidden md:flex w-72 flex-col border-r border-[#3b4754] bg-[#111418] dark:bg-card-dark p-4 justify-between h-full">
+            <aside className="hidden md:flex w-72 flex-col border-r border-[#3b4754] bg-[#111418] dark:bg-card-dark p-4 justify-between h-full shrink-0">
                 <div className="flex flex-col gap-6">
                     {/* Brand / Logo */}
                     <div className="flex items-center gap-3 px-2">
@@ -74,21 +88,6 @@ const Layout = ({ children }) => {
                     </button>
                 </div>
             </aside>
-
-            {/* Mobile Header - Mobile Only */}
-            <header className="flex md:hidden items-center justify-between bg-[#111418] border-b border-[#3b4754] px-4 py-3 sticky top-0 z-40">
-                <div className="flex items-center gap-2">
-                    <img src="/logo_upn.png" alt="UPN Logo" className="size-8 object-contain" />
-                    <h1 className="text-white text-base font-bold">Spada Task Manager</h1>
-                </div>
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors"
-                >
-                    <span className="material-symbols-outlined text-red-400 text-xl">logout</span>
-                    <span className="text-red-400 text-sm font-medium">Logout</span>
-                </button>
-            </header>
 
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col h-full overflow-y-auto pb-20 md:pb-0">
