@@ -75,34 +75,74 @@ const Layout = ({ children }) => {
                 </div>
             </aside>
 
+            {/* Mobile Header - Mobile Only */}
+            <header className="flex md:hidden items-center justify-between bg-[#111418] border-b border-[#3b4754] px-4 py-3 sticky top-0 z-40">
+                <div className="flex items-center gap-2">
+                    <img src="/logo_upn.png" alt="UPN Logo" className="size-8 object-contain" />
+                    <h1 className="text-white text-base font-bold">Spada Task Manager</h1>
+                </div>
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-red-400 text-xl">logout</span>
+                    <span className="text-red-400 text-sm font-medium">Logout</span>
+                </button>
+            </header>
+
             {/* Main Content Area */}
             <main className="flex-1 flex flex-col h-full overflow-y-auto pb-20 md:pb-0">
                 {children}
             </main>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-center justify-around bg-[#111418] border-t border-[#3b4754] h-16 px-2 safe-area-bottom">
-                {navItems.map(item => (
-                    <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive(item.path)
-                            ? 'text-primary'
-                            : 'text-[#9dabb9]'
-                            }`}
-                    >
-                        <span className={`material-symbols-outlined text-[22px] ${isActive(item.path) ? 'filled-icon' : ''}`}>{item.icon}</span>
-                        <span className="text-[10px] font-medium">{item.label}</span>
-                    </Link>
-                ))}
-                {/* Logout button on mobile */}
-                <button
-                    onClick={handleLogout}
-                    className="flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-[#9dabb9] hover:text-red-400 transition-colors"
+            {/* Mobile Bottom Navigation - 5 items, Calendar in center */}
+            <nav className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden items-end justify-around bg-[#111418] border-t border-[#3b4754] h-16 px-2 safe-area-bottom">
+                {/* Dashboard */}
+                <Link
+                    to="/dashboard"
+                    className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive('/dashboard') ? 'text-primary' : 'text-[#9dabb9]'}`}
                 >
-                    <span className="material-symbols-outlined text-[22px]">logout</span>
-                    <span className="text-[10px] font-medium">Logout</span>
-                </button>
+                    <span className={`material-symbols-outlined text-[22px] ${isActive('/dashboard') ? 'filled-icon' : ''}`}>dashboard</span>
+                    <span className="text-[10px] font-medium">Dashboard</span>
+                </Link>
+
+                {/* Courses */}
+                <Link
+                    to="/my-courses"
+                    className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive('/my-courses') ? 'text-primary' : 'text-[#9dabb9]'}`}
+                >
+                    <span className={`material-symbols-outlined text-[22px] ${isActive('/my-courses') ? 'filled-icon' : ''}`}>menu_book</span>
+                    <span className="text-[10px] font-medium">Courses</span>
+                </Link>
+
+                {/* Calendar - Center with circular design */}
+                <Link
+                    to="/calendar"
+                    className="flex flex-col items-center justify-center flex-1 -mt-6 transition-all"
+                >
+                    <div className={`flex items-center justify-center size-14 rounded-full shadow-lg transition-all ${isActive('/calendar') ? 'bg-primary shadow-primary/30' : 'bg-gradient-to-br from-primary to-blue-600 shadow-primary/20'}`}>
+                        <span className="material-symbols-outlined text-white text-[28px] filled-icon">calendar_month</span>
+                    </div>
+                    <span className={`text-[10px] font-medium mt-1 ${isActive('/calendar') ? 'text-primary' : 'text-[#9dabb9]'}`}>Calendar</span>
+                </Link>
+
+                {/* Auto Attendance */}
+                <Link
+                    to="/attendance"
+                    className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive('/attendance') ? 'text-primary' : 'text-[#9dabb9]'}`}
+                >
+                    <span className={`material-symbols-outlined text-[22px] ${isActive('/attendance') ? 'filled-icon' : ''}`}>fingerprint</span>
+                    <span className="text-[10px] font-medium">Attendance</span>
+                </Link>
+
+                {/* Settings */}
+                <Link
+                    to="/settings"
+                    className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${isActive('/settings') ? 'text-primary' : 'text-[#9dabb9]'}`}
+                >
+                    <span className={`material-symbols-outlined text-[22px] ${isActive('/settings') ? 'filled-icon' : ''}`}>settings</span>
+                    <span className="text-[10px] font-medium">Settings</span>
+                </Link>
             </nav>
         </div>
     );
