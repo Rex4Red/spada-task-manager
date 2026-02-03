@@ -332,7 +332,7 @@ export class AttendanceService {
     }
 
     /**
-     * Send Discord notification with result
+     * Send Discord notification with result (includes screenshot if available)
      */
     async sendDiscordNotification(
         discordService: DiscordService,
@@ -350,7 +350,7 @@ export class AttendanceService {
             case 'ERROR': emoji = '⚠️'; color = DiscordColors.DANGER; break;
         }
 
-        await discordService.sendEmbed(webhookUrl, {
+        const embed = {
             title: `${emoji} Auto Attendance Report`,
             color,
             fields: [
@@ -359,6 +359,14 @@ export class AttendanceService {
                 { name: '💬 Message', value: result.message }
             ],
             timestamp: new Date().toISOString()
-        });
+        };
+
+        // Send with screenshot if available
+        if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
+            await discordService.sendEmbedWithImage(webhookUrl, embed, result.screenshotPath);
+        } else {
+            await discordService.sendEmbed(webhookUrl, embed);
+        }
     }
 }
+

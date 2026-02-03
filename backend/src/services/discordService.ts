@@ -149,6 +149,110 @@ export class DiscordService {
             clearTimeout(timeoutId);
         }
     }
+
+    /**
+     * Send embed with image attachment to Discord
+     * Uses multipart form-data to attach the image file
+     */
+    public async sendEmbedWithImage(
+        webhookUrl: string,
+        embed: DiscordEmbed,
+        imagePath: string,
+        username: string = 'SPADA Task Manager'
+    ): Promise<{ success: boolean; error?: string }> {
+        if (!webhookUrl) {
+            return { success: false, error: 'Webhook URL not provided' };
+        }
+
+        try {
+            const fs = await import('fs');
+            const path = await import('path');
+
+            if (!fs.existsSync(imagePath)) {
+                console.log('Image file not found, sending embed without image');
+                return this.sendEmbed(webhookUrl, embed, username);
+            }
+
+            const imageBuffer = fs.readFileSync(imagePath);
+            const imageBase64 = imageBuffer.toString('base64');
+            const fileName = path.basename(imagePath);
+
+            // Set the image in embed to reference the attachment
+            const embedWithImage = {
+                ...embed,
+                image: { url: `attachment://${fileName}` }
+            };
+
+            const payload = {
+                username,
+                embeds: [embedWithImage],
+            };
+
+            // Try via proxy first
+            if (this.proxyUrl) {
+                try {
+                    const result = await this.sendImageViaProxy(webhookUrl, payload, imageBase64, fileName);
+                    if (result.success) {
+                        console.log('✅ Discord with image sent via proxy');
+                        return result;
+                    }
+                    console.log('Proxy with image failed:', result.error);
+                } catch (e: any) {
+                    console.log('Proxy with image exception:', e.message);
+                }
+            }
+
+            // Fallback: Send without image
+            console.log('Falling back to embed without image');
+            return this.sendEmbed(webhookUrl, embed, username);
+
+        } catch (e: any) {
+            console.error('Error sending embed with image:', e);
+            return { success: false, error: e.message };
+        }
+    }
+
+    private async sendImageViaProxy(
+        webhookUrl: string,
+        payload: any,
+        imageBase64: string,
+        fileName: string
+    ): Promise<{ success: boolean; error?: string }> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // Longer timeout for images
+
+        try {
+            const response = await fetch(this.proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Proxy-Secret': process.env.DISCORD_PROXY_SECRET || process.env.TELEGRAM_PROXY_SECRET || '',
+                },
+                body: JSON.stringify({
+                    webhookUrl,
+                    payload,
+                    image: {
+                        base64: imageBase64,
+                        fileName
+                    }
+                }),
+                signal: controller.signal,
+            });
+
+            const data = await response.json();
+            if (data.ok) {
+                return { success: true };
+            }
+            return { success: false, error: data.error || 'Proxy returned error' };
+        } catch (e: any) {
+            if (e.name === 'AbortError') {
+                return { success: false, error: 'Proxy request timeout' };
+            }
+            return { success: false, error: e.message };
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
 }
 
 // Discord Embed interface

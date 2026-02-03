@@ -1,5 +1,6 @@
 // Vercel Serverless Function - Discord Webhook Proxy
 // This receives requests from the HF backend and forwards to Discord
+// Supports both JSON payloads and image attachments
 
 export default async function handler(req, res) {
     // Set CORS headers
@@ -25,7 +26,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const { webhookUrl, payload } = req.body;
+    const { webhookUrl, payload, image } = req.body;
 
     if (!webhookUrl || !payload) {
         return res.status(400).json({ ok: false, error: 'Missing webhookUrl or payload' });
@@ -37,16 +38,43 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Forward to Discord webhook
-        const response = await fetch(webhookUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-        });
+        let response;
 
-        // Discord returns 204 No Content on success
+        // Check if we have an image to send
+        if (image && image.base64 && image.fileName) {
+            // Send with image attachment using FormData
+            const FormData = (await import('form-data')).default;
+            const formData = new FormData();
+
+            // Convert base64 to buffer
+            const imageBuffer = Buffer.from(image.base64, 'base64');
+
+            // Add the payload as JSON string
+            formData.append('payload_json', JSON.stringify(payload));
+
+            // Add the image file
+            formData.append('files[0]', imageBuffer, {
+                filename: image.fileName,
+                contentType: 'image/png'
+            });
+
+            response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: formData.getHeaders(),
+                body: formData
+            });
+        } else {
+            // Standard JSON payload (no image)
+            response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+        }
+
+        // Discord returns 204 No Content on success, 200 on success with response
         if (response.ok || response.status === 204) {
             return res.status(200).json({ ok: true, message: 'Sent to Discord successfully' });
         } else {
