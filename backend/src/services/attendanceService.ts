@@ -32,8 +32,28 @@ export class AttendanceService {
             console.log('[Attendance] Launching Puppeteer...');
             this.browser = await puppeteer.launch({
                 headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080'],
-                defaultViewport: { width: 1920, height: 1080 }
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-software-rasterizer',
+                    '--single-process',
+                    '--no-zygote',
+                    '--disable-extensions',
+                    '--disable-background-networking',
+                    '--disable-default-apps',
+                    '--disable-sync',
+                    '--disable-translate',
+                    '--hide-scrollbars',
+                    '--metrics-recording-only',
+                    '--mute-audio',
+                    '--no-first-run',
+                    '--safebrowsing-disable-auto-update',
+                    '--window-size=1280,720'
+                ],
+                defaultViewport: { width: 1280, height: 720 }
             });
             this.page = await this.browser.newPage();
             await this.page.setUserAgent(
