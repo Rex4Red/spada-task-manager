@@ -42,26 +42,42 @@ export default async function handler(req, res) {
 
         // Check if we have an image to send
         if (image && image.base64 && image.fileName) {
-            // Send with image attachment using FormData
-            const FormData = (await import('form-data')).default;
-            const formData = new FormData();
+            // Build multipart form-data manually
+            const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
 
             // Convert base64 to buffer
             const imageBuffer = Buffer.from(image.base64, 'base64');
 
-            // Add the payload as JSON string
-            formData.append('payload_json', JSON.stringify(payload));
+            // Build the multipart body
+            let body = '';
 
-            // Add the image file
-            formData.append('files[0]', imageBuffer, {
-                filename: image.fileName,
-                contentType: 'image/png'
-            });
+            // Add payload_json part
+            body += `--${boundary}\r\n`;
+            body += `Content-Disposition: form-data; name="payload_json"\r\n`;
+            body += `Content-Type: application/json\r\n\r\n`;
+            body += JSON.stringify(payload) + '\r\n';
+
+            // Add file part - we need to create a buffer for binary data
+            const payloadPart = Buffer.from(body, 'utf8');
+
+            const fileHeader = Buffer.from(
+                `--${boundary}\r\n` +
+                `Content-Disposition: form-data; name="files[0]"; filename="${image.fileName}"\r\n` +
+                `Content-Type: image/png\r\n\r\n`,
+                'utf8'
+            );
+
+            const fileFooter = Buffer.from(`\r\n--${boundary}--\r\n`, 'utf8');
+
+            // Combine all parts
+            const fullBody = Buffer.concat([payloadPart, fileHeader, imageBuffer, fileFooter]);
 
             response = await fetch(webhookUrl, {
                 method: 'POST',
-                headers: formData.getHeaders(),
-                body: formData
+                headers: {
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                },
+                body: fullBody
             });
         } else {
             // Standard JSON payload (no image)
@@ -80,7 +96,7 @@ export default async function handler(req, res) {
         } else {
             const errorText = await response.text();
             console.error('Discord API error:', response.status, errorText);
-            return res.status(400).json({ ok: false, error: `Discord API error: ${response.status}` });
+            return res.status(400).json({ ok: false, error: `Discord API error: ${response.status} - ${errorText}` });
         }
     } catch (error) {
         console.error('Discord proxy error:', error);
