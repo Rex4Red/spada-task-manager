@@ -39,8 +39,6 @@ export class AttendanceService {
                     '--disable-dev-shm-usage',
                     '--disable-gpu',
                     '--disable-software-rasterizer',
-                    '--single-process',
-                    '--no-zygote',
                     '--disable-extensions',
                     '--disable-background-networking',
                     '--disable-default-apps',
@@ -51,9 +49,11 @@ export class AttendanceService {
                     '--mute-audio',
                     '--no-first-run',
                     '--safebrowsing-disable-auto-update',
+                    '--js-flags=--max-old-space-size=256',
                     '--window-size=1280,720'
                 ],
-                defaultViewport: { width: 1280, height: 720 }
+                defaultViewport: { width: 1280, height: 720 },
+                timeout: 60000
             });
             this.page = await this.browser.newPage();
             await this.page.setUserAgent(
