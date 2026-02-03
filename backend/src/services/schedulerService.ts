@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import prisma from '../config/database';
 import { TelegramService } from './telegramService';
+import { DiscordService, DiscordColors } from './discordService';
 import { AttendanceService } from './attendanceService';
 import { ScraperService } from './scraperService';
 import { saveCoursesToDb } from './courseService';
@@ -9,9 +10,11 @@ import { formatDistanceToNow } from 'date-fns';
 
 export class SchedulerService {
     private telegramService: TelegramService;
+    private discordService: DiscordService;
 
-    constructor(telegramService: TelegramService) {
+    constructor(telegramService: TelegramService, discordService?: DiscordService) {
         this.telegramService = telegramService;
+        this.discordService = discordService || new DiscordService();
     }
 
     public init() {
@@ -54,7 +57,10 @@ export class SchedulerService {
                     course: {
                         include: {
                             user: {
-                                include: { telegramConfig: true }
+                                include: {
+                                    telegramConfig: true,
+                                    discordConfig: true
+                                }
                             }
                         }
                     }
@@ -121,6 +127,16 @@ export class SchedulerService {
                     this.telegramService,
                     user.telegramConfig.chatId,
                     botToken,
+                    schedule.course.name,
+                    result
+                );
+            }
+
+            // Send Discord notification
+            if (user.discordConfig?.isActive && user.discordConfig?.webhookUrl) {
+                await attendanceService.sendDiscordNotification(
+                    this.discordService,
+                    user.discordConfig.webhookUrl,
                     schedule.course.name,
                     result
                 );
@@ -262,17 +278,22 @@ export class SchedulerService {
 
     private async checkDeadlines() {
         try {
-            // 1. Get users with active Telegram config
+            // 1. Get users with active Telegram or Discord config
             const users = await prisma.user.findMany({
                 where: {
-                    telegramConfig: { isActive: true }
+                    OR: [
+                        { telegramConfig: { isActive: true } },
+                        { discordConfig: { isActive: true } }
+                    ]
                 },
                 include: {
                     telegramConfig: true,
+                    discordConfig: true,
                     notificationSettings: true,
                     tasks: {
                         where: {
                             status: { not: 'COMPLETED' },
+                            isDeleted: false,
                             deadline: {
                                 gte: new Date(),
                                 lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // Next 3 days
@@ -313,6 +334,36 @@ export class SchedulerService {
                             }
                         }
                     }
+
+                    // Send Discord notification
+                    if (user.discordConfig?.isActive && user.discordConfig?.webhookUrl) {
+                        const lastDiscordNotif = await prisma.notification.findFirst({
+                            where: {
+                                taskId: task.id,
+                                type: 'discord',
+                                sentAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                            }
+                        });
+
+                        if (!lastDiscordNotif) {
+                            const sent = await this.discordService.sendEmbed(user.discordConfig.webhookUrl, {
+                                title: '⚠️ Deadline Reminder',
+                                description: `**${task.title}**`,
+                                color: DiscordColors.WARNING,
+                                fields: [
+                                    { name: '⏰ Due', value: timeText, inline: true }
+                                ],
+                                footer: { text: "Don't forget to submit!" },
+                                timestamp: new Date().toISOString()
+                            });
+                            if (sent.success) {
+                                await prisma.notification.create({
+                                    data: { taskId: task.id, message, type: 'discord', isDelivered: true }
+                                });
+                                console.log(`[Notification] Discord sent to ${user.email} for task ${task.id}`);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -321,4 +372,3 @@ export class SchedulerService {
         }
     }
 }
-

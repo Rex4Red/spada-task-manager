@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import prisma from '../config/database';
 import { TelegramService } from './telegramService';
+import { DiscordService, DiscordColors } from './discordService';
 
 interface AttendanceResult {
     success: boolean;
@@ -307,12 +308,13 @@ export class AttendanceService {
         result: AttendanceResult
     ): Promise<void> {
         let emoji = '❓';
+        let color = DiscordColors.INFO;
         switch (result.status) {
-            case 'SUCCESS': emoji = '✅'; break;
-            case 'FAILED': emoji = '❌'; break;
-            case 'NOT_AVAILABLE': emoji = 'ℹ️'; break;
-            case 'TIMEOUT': emoji = '⏰'; break;
-            case 'ERROR': emoji = '⚠️'; break;
+            case 'SUCCESS': emoji = '✅'; color = DiscordColors.SUCCESS; break;
+            case 'FAILED': emoji = '❌'; color = DiscordColors.DANGER; break;
+            case 'NOT_AVAILABLE': emoji = 'ℹ️'; color = DiscordColors.INFO; break;
+            case 'TIMEOUT': emoji = '⏰'; color = DiscordColors.WARNING; break;
+            case 'ERROR': emoji = '⚠️'; color = DiscordColors.DANGER; break;
         }
 
         const message = `${emoji} *Auto Attendance Report*\n\n` +
@@ -320,12 +322,43 @@ export class AttendanceService {
             `📊 Status: ${result.status}\n` +
             `💬 ${result.message}`;
 
-        // Send screenshot first if available
+        // Send screenshot first if available (Telegram only)
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
             await telegramService.sendPhoto(chatId, result.screenshotPath, botToken, `📸 Screenshot: ${courseName}`);
         }
 
         // Then send text message
         await telegramService.sendMessage(chatId, message, botToken);
+    }
+
+    /**
+     * Send Discord notification with result
+     */
+    async sendDiscordNotification(
+        discordService: DiscordService,
+        webhookUrl: string,
+        courseName: string,
+        result: AttendanceResult
+    ): Promise<void> {
+        let emoji = '❓';
+        let color = DiscordColors.INFO;
+        switch (result.status) {
+            case 'SUCCESS': emoji = '✅'; color = DiscordColors.SUCCESS; break;
+            case 'FAILED': emoji = '❌'; color = DiscordColors.DANGER; break;
+            case 'NOT_AVAILABLE': emoji = 'ℹ️'; color = DiscordColors.INFO; break;
+            case 'TIMEOUT': emoji = '⏰'; color = DiscordColors.WARNING; break;
+            case 'ERROR': emoji = '⚠️'; color = DiscordColors.DANGER; break;
+        }
+
+        await discordService.sendEmbed(webhookUrl, {
+            title: `${emoji} Auto Attendance Report`,
+            color,
+            fields: [
+                { name: '📚 Course', value: courseName, inline: true },
+                { name: '📊 Status', value: result.status, inline: true },
+                { name: '💬 Message', value: result.message }
+            ],
+            timestamp: new Date().toISOString()
+        });
     }
 }

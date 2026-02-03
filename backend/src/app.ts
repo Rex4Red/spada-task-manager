@@ -30,7 +30,7 @@ const app = express();
 // Initialize Services
 export const telegramService = new TelegramService(process.env.TELEGRAM_BOT_TOKEN || '');
 export const discordService = new DiscordService();
-const schedulerService = new SchedulerService(telegramService);
+const schedulerService = new SchedulerService(telegramService, discordService);
 schedulerService.init();
 
 // Middleware
