@@ -31,7 +31,7 @@ export const testScraping = async (req: Request, res: Response) => {
 };
 
 export const syncCourses = async (req: Request, res: Response) => {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
     const userId = (req as any).user.id;
 
     // Use stored credentials if not provided
