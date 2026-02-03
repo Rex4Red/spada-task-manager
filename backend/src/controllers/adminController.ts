@@ -9,8 +9,8 @@ export const getStats = async (req: AdminRequest, res: Response) => {
     try {
         const [userCount, courseCount, assignmentCount, scheduleCount] = await Promise.all([
             prisma.user.count(),
-            prisma.course.count(),
-            prisma.task.count(),
+            prisma.course.count({ where: { isDeleted: false } }),
+            prisma.task.count({ where: { isDeleted: false } }),
             prisma.attendanceSchedule.count({ where: { isActive: true } })
         ]);
 
@@ -60,8 +60,8 @@ export const getUsers = async (req: AdminRequest, res: Response) => {
                     createdAt: true,
                     _count: {
                         select: {
-                            courses: true,
-                            tasks: true
+                            courses: { where: { isDeleted: false } },
+                            tasks: { where: { isDeleted: false } }
                         }
                     }
                 }
@@ -126,6 +126,7 @@ export const getUserDetail = async (req: AdminRequest, res: Response) => {
                     }
                 },
                 courses: {
+                    where: { isDeleted: false },
                     select: {
                         id: true,
                         name: true,
@@ -133,6 +134,7 @@ export const getUserDetail = async (req: AdminRequest, res: Response) => {
                         url: true,
                         lastSynced: true,
                         tasks: {
+                            where: { isDeleted: false },
                             select: {
                                 id: true,
                                 title: true,
