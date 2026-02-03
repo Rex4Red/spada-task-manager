@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
-import { telegramService } from '../app';
+import { telegramService, discordService } from '../app';
 
 export const updateTelegramSettings = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
@@ -37,6 +37,7 @@ export const getSettings = async (req: Request, res: Response) => {
             where: { id: userId },
             include: {
                 telegramConfig: true,
+                discordConfig: true,
                 notificationSettings: true
             }
         });
@@ -51,8 +52,9 @@ export const getSettings = async (req: Request, res: Response) => {
                 name: user.name,
                 email: user.email,
                 spadaUsername: user.spadaUsername,
-                hasStoredPassword: !!user.spadaPassword, // true if password exists
+                hasStoredPassword: !!user.spadaPassword,
                 telegramConfig: user.telegramConfig,
+                discordConfig: user.discordConfig,
                 notificationSettings: user.notificationSettings
             }
         });
@@ -124,5 +126,71 @@ export const updateSpadaSettings = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error updating SPADA settings:', error);
         res.status(500).json({ message: 'Failed to update SPADA settings' });
+    }
+};
+
+// Discord Settings
+export const updateDiscordSettings = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { webhookUrl, isActive } = req.body;
+
+    if (!webhookUrl) {
+        res.status(400).json({ message: 'Webhook URL is required' });
+        return;
+    }
+
+    try {
+        const config = await prisma.discordConfig.upsert({
+            where: { userId },
+            update: {
+                webhookUrl,
+                isActive: isActive ?? true
+            },
+            create: {
+                userId,
+                webhookUrl,
+                isActive: isActive ?? true
+            }
+        });
+
+        res.json({ message: 'Discord settings updated', data: config });
+    } catch (error) {
+        console.error('Error updating Discord settings:', error);
+        res.status(500).json({ message: 'Failed to update Discord settings' });
+    }
+};
+
+export const testDiscordNotification = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { webhookUrl: bodyWebhookUrl } = req.body || {};
+
+    try {
+        let targetWebhookUrl = bodyWebhookUrl;
+
+        if (!targetWebhookUrl) {
+            const config = await prisma.discordConfig.findUnique({ where: { userId } });
+            if (!config || !config.webhookUrl) {
+                res.status(400).json({ message: 'Discord Webhook URL not provided and not configured' });
+                return;
+            }
+            targetWebhookUrl = config.webhookUrl;
+        }
+
+        const result = await discordService.sendEmbed(targetWebhookUrl, {
+            title: '🔔 Test Notification',
+            description: 'This is a test message from **SPADA Task Manager**.\n\nIf you see this, your Discord integration is working! 🚀',
+            color: 0x5865F2, // Discord blurple
+            footer: { text: 'SPADA Task Manager' },
+            timestamp: new Date().toISOString()
+        });
+
+        if (result.success) {
+            res.json({ message: 'Test notification sent to Discord!' });
+        } else {
+            res.status(500).json({ message: `Failed: ${result.error}` });
+        }
+    } catch (error) {
+        console.error('Error testing Discord notification:', error);
+        res.status(500).json({ message: 'Error testing Discord notification' });
     }
 };

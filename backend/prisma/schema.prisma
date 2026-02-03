@@ -23,6 +23,7 @@ model User {
   courses             Course[]
   tasks               Task[]
   telegramConfig      TelegramConfig?
+  discordConfig       DiscordConfig?
   notificationSettings NotificationSettings?
 }
 
@@ -71,6 +72,17 @@ model TelegramConfig {
   userId          Int       @unique
   botToken        String
   chatId          String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DiscordConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  webhookUrl      String
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

@@ -1,16 +1,20 @@
 import prisma from '../config/database';
-
-import { telegramService } from '../app';
+import { telegramService, discordService } from '../app';
+import { DiscordColors } from './discordService';
 
 export const saveCoursesToDb = async (userId: number, courses: any[]) => {
     // console.log(`Saving ${courses.length} courses to database for user ${userId}...`);
 
-    // 1. Get User's Telegram Config for Notifications
+    // 1. Get User's Notification Configs
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { telegramConfig: true }
+        include: {
+            telegramConfig: true,
+            discordConfig: true
+        }
     });
     const telegramConfig = user?.telegramConfig;
+    const discordConfig = user?.discordConfig;
 
 
     for (const course of courses) {
@@ -85,22 +89,42 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     }
                 });
 
-                // Send Notification if NEW Task and Telegram is Active
-                if (!existingTask && telegramConfig && telegramConfig.isActive && telegramConfig.chatId) {
-                    console.log(`New task detected: ${assignment.name}. Sending notification...`);
-                    const message = `
+                // Send Notification if NEW Task
+                if (!existingTask) {
+                    console.log(`New task detected: ${assignment.name}. Sending notifications...`);
+                    const deadlineStr = dueDateObj ? dueDateObj.toLocaleString('id-ID') : 'No Deadline';
+
+                    // Telegram Notification
+                    if (telegramConfig && telegramConfig.isActive && telegramConfig.chatId) {
+                        const message = `
 🆕 *New Task Detected!*
 
 📚 *Course:* ${course.name}
 📝 *Task:* ${assignment.name}
-📅 *Deadline:* ${dueDateObj ? dueDateObj.toLocaleString('id-ID') : 'No Deadline'}
+📅 *Deadline:* ${deadlineStr}
 🔗 [View Task](${assignment.url})
-                    `.trim();
+                        `.trim();
+                        telegramService.sendMessage(telegramConfig.chatId, message, telegramConfig.botToken).catch(err => {
+                            console.error('Failed to send Telegram notification:', err);
+                        });
+                    }
 
-                    // Send asynchronously to not block the sync process too much
-                    telegramService.sendMessage(telegramConfig.chatId, message, telegramConfig.botToken).catch(err => {
-                        console.error('Failed to send new task notification:', err);
-                    });
+                    // Discord Notification
+                    if (discordConfig && discordConfig.isActive && discordConfig.webhookUrl) {
+                        discordService.sendEmbed(discordConfig.webhookUrl, {
+                            title: '🆕 New Task Detected!',
+                            description: `A new assignment has been added to **${course.name}**`,
+                            color: DiscordColors.INFO,
+                            fields: [
+                                { name: '📝 Task', value: assignment.name, inline: true },
+                                { name: '📅 Deadline', value: deadlineStr, inline: true },
+                                { name: '🔗 Link', value: `[View Task](${assignment.url})` }
+                            ],
+                            timestamp: new Date().toISOString()
+                        }).catch(err => {
+                            console.error('Failed to send Discord notification:', err);
+                        });
+                    }
                 }
             }
         }

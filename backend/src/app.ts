@@ -22,12 +22,14 @@ import adminRoutes from './routes/adminRoutes';
 
 // Services
 import { TelegramService } from './services/telegramService';
+import { DiscordService } from './services/discordService';
 import { SchedulerService } from './services/schedulerService';
 
 const app = express();
 
 // Initialize Services
 export const telegramService = new TelegramService(process.env.TELEGRAM_BOT_TOKEN || '');
+export const discordService = new DiscordService();
 const schedulerService = new SchedulerService(telegramService);
 schedulerService.init();
 
