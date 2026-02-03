@@ -51,6 +51,7 @@ export const getSettings = async (req: Request, res: Response) => {
                 name: user.name,
                 email: user.email,
                 spadaUsername: user.spadaUsername,
+                hasStoredPassword: !!user.spadaPassword, // true if password exists
                 telegramConfig: user.telegramConfig,
                 notificationSettings: user.notificationSettings
             }
