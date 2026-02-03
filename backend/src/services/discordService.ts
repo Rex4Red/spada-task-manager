@@ -6,9 +6,16 @@ export class DiscordService {
     private proxyUrl: string;
 
     constructor() {
-        // Use same proxy pattern as Telegram for HF compatibility
+        // Use DISCORD_PROXY_URL or derive from TELEGRAM_PROXY_URL
         this.proxyUrl = process.env.DISCORD_PROXY_URL || '';
-        console.log('Discord Service initialized');
+
+        // If no explicit Discord proxy, derive from Telegram proxy URL
+        if (!this.proxyUrl && process.env.TELEGRAM_PROXY_URL) {
+            // Replace /api/telegram-proxy with /api/discord-proxy
+            this.proxyUrl = process.env.TELEGRAM_PROXY_URL.replace('/telegram-proxy', '/discord-proxy');
+        }
+
+        console.log('Discord Service initialized', this.proxyUrl ? '(with proxy)' : '(direct mode)');
     }
 
     /**
@@ -122,7 +129,7 @@ export class DiscordService {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Proxy-Secret': process.env.DISCORD_PROXY_SECRET || '',
+                    'X-Proxy-Secret': process.env.DISCORD_PROXY_SECRET || process.env.TELEGRAM_PROXY_SECRET || '',
                 },
                 body: JSON.stringify({ webhookUrl, payload }),
                 signal: controller.signal,
