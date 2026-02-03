@@ -71,27 +71,39 @@ export class ScraperService {
     }
 
     /**
-     * Scrape enrolled courses from the dashboard
+     * Scrape enrolled courses from the sidebar "My courses" section
      */
     async scrapeCourses() {
         if (!this.page) throw new Error('Browser not initialized or not logged in');
 
         try {
-            console.log('Navigating to dashboard...');
-            // Usually dashboard is the default page after login, but let's be safe
-            if (!this.page.url().includes('my')) {
-                await this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'networkidle2' });
-            }
+            console.log('Navigating to dashboard to scrape courses...');
+            // Navigate to dashboard first to ensure sidebar is loaded
+            await this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'networkidle2', timeout: 30000 });
 
-            console.log('Scraping courses...');
-            // Selector for course cards (Adjust based on SPADA/Moodle theme)
-            // Common Moodle selectors: .coursebox, .card-deck .card, .dashboard-card
+            // Wait for sidebar to load
+            await new Promise(r => setTimeout(r, 2000));
+
+            console.log('Scraping courses from sidebar...');
+
+            // Use the sidebar selector based on SPADA HTML structure
             const courses = await this.page.evaluate(() => {
-                const courseElements = document.querySelectorAll('.course-info-container'); // Example selector
-                const relativeUrl = window.location.origin;
+                // Primary selector: sidebar "My courses" links
+                const sidebarLinks = document.querySelectorAll('a[data-parent-key="mycourses"]');
 
-                // Fallback for different themes
-                // Try to find any link that looks like a course link
+                if (sidebarLinks.length > 0) {
+                    return Array.from(sidebarLinks).map(link => {
+                        const anchor = link as HTMLAnchorElement;
+                        const mediaBody = anchor.querySelector('.media-body');
+                        return {
+                            id: anchor.getAttribute('data-key') || '',
+                            name: mediaBody?.textContent?.trim() || anchor.textContent?.trim() || 'Unknown Course',
+                            url: anchor.href
+                        };
+                    }).filter(c => c.id && c.url.includes('/course/view.php'));
+                }
+
+                // Fallback: try any course link pattern
                 const allLinks = Array.from(document.querySelectorAll('a[href*="/course/view.php?id="]'));
                 const uniqueCourses = new Map();
 
@@ -100,7 +112,6 @@ export class ScraperService {
                     const idMatch = href.match(/id=(\d+)/);
                     if (idMatch) {
                         const id = idMatch[1];
-                        // Try to find the closest text node or title
                         const name = (link as HTMLElement).innerText.trim() || 'Untitled Course';
                         if (name && !uniqueCourses.has(id)) {
                             uniqueCourses.set(id, { id, name, url: href });
@@ -111,7 +122,7 @@ export class ScraperService {
                 return Array.from(uniqueCourses.values());
             });
 
-            console.log(`Found ${courses.length} courses.`);
+            console.log(`Found ${courses.length} courses from sidebar.`);
             return courses;
         } catch (error) {
             console.error('Error scraping courses:', error);

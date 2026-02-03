@@ -11,12 +11,13 @@ const MyCourses = () => {
     const [loading, setLoading] = useState(true);
     const [newCourseUrl, setNewCourseUrl] = useState('');
     const [syncingNew, setSyncingNew] = useState(false);
+    const [syncingAll, setSyncingAll] = useState(false);
     const [syncingId, setSyncingId] = useState(null);
     const [stats, setStats] = useState({ totalCourses: 0, pendingTasks: 0 });
-    const [spadaUsername, setSpadaUsername] = useState(''); // Need to get this from user/db?
-    const [spadaPassword, setSpadaPassword] = useState('');
+    const [hasCredentials, setHasCredentials] = useState(true);
     const [showHelp, setShowHelp] = useState(false);
     const [expandedCourseId, setExpandedCourseId] = useState(null);
+    const [syncError, setSyncError] = useState(null);
 
     // Fetch courses
     const fetchCourses = async () => {
@@ -37,12 +38,49 @@ const MyCourses = () => {
         }
     };
 
+    // Check if user has SPADA credentials configured
+    const checkCredentials = async () => {
+        try {
+            const response = await api.get('/settings');
+            const settings = response.data.data;
+            setHasCredentials(!!(settings?.spadaUsername && settings?.hasStoredPassword));
+        } catch (error) {
+            console.error('Error checking credentials:', error);
+            setHasCredentials(false);
+        }
+    };
+
     useEffect(() => {
-        // We temporarily hardcode credentials or simple prompt because we haven't built a full Settings page for creds yet
-        // Ideally, we should pull these from encrypted storage in DB
-        // For this demo, let's ask user to re-enter if not stored in session (which acts as temp storage)
         fetchCourses();
+        checkCredentials();
     }, []);
+
+    // Sync all courses from SPADA
+    const handleSyncAllCourses = async () => {
+        setSyncingAll(true);
+        setSyncError(null);
+        try {
+            const response = await api.post('/scraper/sync');
+            await fetchCourses();
+            alert(`${response.data.message}`);
+        } catch (error) {
+            console.error('Sync all failed:', error);
+            const errorCode = error.response?.data?.code;
+            const errorMsg = error.response?.data?.message || 'Failed to sync courses';
+
+            if (errorCode === 'CREDENTIALS_MISSING' || errorCode === 'LOGIN_FAILED') {
+                setSyncError(errorMsg);
+                if (window.confirm(`${errorMsg}\n\nGo to Settings to configure SPADA credentials?`)) {
+                    window.location.href = '/settings';
+                }
+            } else {
+                setSyncError(errorMsg);
+                alert(errorMsg);
+            }
+        } finally {
+            setSyncingAll(false);
+        }
+    };
 
     const handleAddCourse = async (e) => {
         e.preventDefault();
@@ -133,6 +171,55 @@ const MyCourses = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Credential Warning Banner */}
+                {!hasCredentials && (
+                    <div className="w-full bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                        <div className="flex items-center gap-3 flex-1">
+                            <span className="material-symbols-outlined text-yellow-500 text-2xl">warning</span>
+                            <div className="flex flex-col">
+                                <span className="text-yellow-200 font-semibold text-sm">SPADA Credentials Not Configured</span>
+                                <span className="text-yellow-200/70 text-xs">Add your SPADA username & password in Settings to enable auto-sync courses.</span>
+                            </div>
+                        </div>
+                        <a
+                            href="/settings"
+                            className="shrink-0 bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-sm px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">settings</span>
+                            Go to Settings
+                        </a>
+                    </div>
+                )}
+
+                {/* Sync Error Message */}
+                {syncError && (
+                    <div className="w-full bg-red-500/10 border border-red-500/30 rounded-xl p-4 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-red-500">error</span>
+                        <span className="text-red-200 text-sm flex-1">{syncError}</span>
+                        <button onClick={() => setSyncError(null)} className="text-red-400 hover:text-white">
+                            <span className="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                )}
+
+                {/* Sync All Courses Button */}
+                <div className="w-full flex flex-col sm:flex-row gap-4">
+                    <button
+                        onClick={handleSyncAllCourses}
+                        disabled={syncingAll || !hasCredentials}
+                        className={`flex-1 sm:flex-none h-14 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-3 ${syncingAll ? 'opacity-70 cursor-not-allowed' : ''
+                            } ${!hasCredentials ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <span className={`material-symbols-outlined text-[22px] ${syncingAll ? 'animate-spin' : ''}`}>
+                            {syncingAll ? 'sync' : 'cloud_sync'}
+                        </span>
+                        <span>{syncingAll ? 'Syncing from SPADA...' : 'Sync All Courses'}</span>
+                    </button>
+                    <p className="text-[#9dabb9] text-xs self-center hidden sm:block">
+                        Automatically fetch all your enrolled courses from SPADA sidebar
+                    </p>
                 </div>
 
                 {/* Add New Course Hero */}

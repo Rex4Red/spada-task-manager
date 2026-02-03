@@ -44,7 +44,10 @@ export const syncCourses = async (req: Request, res: Response) => {
             u = user.spadaUsername;
             p = decrypt(user.spadaPassword);
         } else {
-            res.status(400).json({ message: 'Credentials required' });
+            res.status(400).json({
+                message: 'SPADA credentials not configured. Please add your username and password in Settings.',
+                code: 'CREDENTIALS_MISSING'
+            });
             return;
         }
     }
@@ -54,17 +57,29 @@ export const syncCourses = async (req: Request, res: Response) => {
         const isLoggedIn = await scraperService.login(u, p);
 
         if (!isLoggedIn) {
-            res.status(401).json({ message: 'Login failed' });
+            res.status(401).json({
+                message: 'Login to SPADA failed. Please check your username and password in Settings.',
+                code: 'LOGIN_FAILED'
+            });
             return;
         }
 
         const courses = await scraperService.scrapeCourses();
         console.log(`Scraped ${courses.length} courses`);
 
-        const coursesWithAssignments = [];
-        const coursesToScrape = courses; // No limit
+        if (courses.length === 0) {
+            await scraperService.close();
+            res.status(200).json({
+                message: 'No courses found in your SPADA account. Make sure you are enrolled in at least one course.',
+                code: 'NO_COURSES',
+                data: []
+            });
+            return;
+        }
 
-        for (const course of coursesToScrape) {
+        const coursesWithAssignments = [];
+
+        for (const course of courses) {
             console.log(`Scraping assignments for course: ${course.name}`);
             const assignments = await scraperService.scrapeAssignments(course.id);
             coursesWithAssignments.push({
@@ -79,14 +94,19 @@ export const syncCourses = async (req: Request, res: Response) => {
         await saveCoursesToDb(userId, coursesWithAssignments);
 
         res.status(200).json({
-            message: 'Sync successful & saved to database',
+            message: `Successfully synced ${coursesWithAssignments.length} courses from SPADA`,
+            code: 'SUCCESS',
             data: coursesWithAssignments
         });
 
     } catch (error: any) {
         console.error('Sync error:', error);
         await scraperService.close();
-        res.status(500).json({ message: 'Sync error', error: error.message });
+        res.status(500).json({
+            message: 'Sync error: ' + error.message,
+            code: 'SYNC_ERROR',
+            error: error.message
+        });
     }
 };
 
