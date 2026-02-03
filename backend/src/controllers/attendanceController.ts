@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AttendanceService } from '../services/attendanceService';
-import { telegramService } from '../app';
+import { telegramService, discordService } from '../app';
 import { decrypt } from '../utils/encryption';
 
 /**
@@ -154,7 +154,10 @@ export const testAttendance = async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            include: { telegramConfig: true }
+            include: {
+                telegramConfig: true,
+                discordConfig: true
+            }
         });
 
         if (!user?.spadaUsername || !user?.spadaPassword) {
@@ -207,6 +210,16 @@ export const testAttendance = async (req: Request, res: Response) => {
                 telegramService,
                 user.telegramConfig.chatId,
                 botToken,
+                course.name,
+                result
+            );
+        }
+
+        // Send Discord notification if configured
+        if (user.discordConfig?.isActive && user.discordConfig?.webhookUrl) {
+            await attendanceService.sendDiscordNotification(
+                discordService,
+                user.discordConfig.webhookUrl,
                 course.name,
                 result
             );
