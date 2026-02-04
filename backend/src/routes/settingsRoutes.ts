@@ -6,7 +6,9 @@ import {
     testTelegramNotification,
     updateSpadaSettings,
     updateDiscordSettings,
-    testDiscordNotification
+    testDiscordNotification,
+    updateWhatsAppSettings,
+    testWhatsAppNotification
 } from '../controllers/settingsController';
 
 const router = express.Router();
@@ -16,7 +18,10 @@ router.put('/telegram', protect, updateTelegramSettings);
 router.post('/telegram/test', protect, testTelegramNotification);
 router.put('/discord', protect, updateDiscordSettings);
 router.post('/discord/test', protect, testDiscordNotification);
+router.put('/whatsapp', protect, updateWhatsAppSettings);
+router.post('/whatsapp/test', protect, testWhatsAppNotification);
 router.put('/spada', protect, updateSpadaSettings);
 
 export default router;
+
 

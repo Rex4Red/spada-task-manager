@@ -24,6 +24,7 @@ model User {
   tasks               Task[]
   telegramConfig      TelegramConfig?
   discordConfig       DiscordConfig?
+  whatsappConfig      WhatsAppConfig?
   notificationSettings NotificationSettings?
 }
 
@@ -83,6 +84,17 @@ model DiscordConfig {
   id              Int       @id @default(autoincrement())
   userId          Int       @unique
   webhookUrl      String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  phoneNumber     String    // Format: 6281234567890 (with country code, no +)
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

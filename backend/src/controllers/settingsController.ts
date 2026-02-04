@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
-import { telegramService, discordService } from '../app';
+import { telegramService, discordService, whatsappService } from '../app';
 
 export const updateTelegramSettings = async (req: Request, res: Response) => {
     const userId = (req as any).user.id;
@@ -38,6 +38,7 @@ export const getSettings = async (req: Request, res: Response) => {
             include: {
                 telegramConfig: true,
                 discordConfig: true,
+                whatsappConfig: true,
                 notificationSettings: true
             }
         });
@@ -55,6 +56,7 @@ export const getSettings = async (req: Request, res: Response) => {
                 hasStoredPassword: !!user.spadaPassword,
                 telegramConfig: user.telegramConfig,
                 discordConfig: user.discordConfig,
+                whatsappConfig: user.whatsappConfig,
                 notificationSettings: user.notificationSettings
             }
         });
@@ -194,3 +196,70 @@ export const testDiscordNotification = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'Error testing Discord notification' });
     }
 };
+
+// WhatsApp Settings
+export const updateWhatsAppSettings = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { phoneNumber, isActive } = req.body;
+
+    if (!phoneNumber) {
+        res.status(400).json({ message: 'Phone number is required' });
+        return;
+    }
+
+    // Normalize phone number (remove + and spaces, keep only digits)
+    const normalizedPhone = phoneNumber.replace(/[+\s-]/g, '');
+
+    try {
+        const config = await prisma.whatsAppConfig.upsert({
+            where: { userId },
+            update: {
+                phoneNumber: normalizedPhone,
+                isActive: isActive ?? true
+            },
+            create: {
+                userId,
+                phoneNumber: normalizedPhone,
+                isActive: isActive ?? true
+            }
+        });
+
+        res.json({ message: 'WhatsApp settings updated', data: config });
+    } catch (error) {
+        console.error('Error updating WhatsApp settings:', error);
+        res.status(500).json({ message: 'Failed to update WhatsApp settings' });
+    }
+};
+
+export const testWhatsAppNotification = async (req: Request, res: Response) => {
+    const userId = (req as any).user.id;
+    const { phoneNumber: bodyPhoneNumber } = req.body || {};
+
+    try {
+        let targetPhoneNumber = bodyPhoneNumber;
+
+        if (!targetPhoneNumber) {
+            const config = await prisma.whatsAppConfig.findUnique({ where: { userId } });
+            if (!config || !config.phoneNumber) {
+                res.status(400).json({ message: 'WhatsApp phone number not provided and not configured' });
+                return;
+            }
+            targetPhoneNumber = config.phoneNumber;
+        }
+
+        const result = await whatsappService.sendMessage(
+            targetPhoneNumber,
+            '🔔 *Test Notification*\n\nThis is a test message from SPADA Task Manager. If you see this, your WhatsApp integration is working! 🚀'
+        );
+
+        if (result.success) {
+            res.json({ message: 'Test notification sent to WhatsApp!' });
+        } else {
+            res.status(500).json({ message: `Failed: ${result.error}` });
+        }
+    } catch (error) {
+        console.error('Error testing WhatsApp notification:', error);
+        res.status(500).json({ message: 'Error testing WhatsApp notification' });
+    }
+};
+

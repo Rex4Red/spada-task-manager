@@ -23,6 +23,7 @@ import adminRoutes from './routes/adminRoutes';
 // Services
 import { TelegramService } from './services/telegramService';
 import { DiscordService } from './services/discordService';
+import { WhatsAppService } from './services/whatsappService';
 import { SchedulerService } from './services/schedulerService';
 
 const app = express();
@@ -30,6 +31,7 @@ const app = express();
 // Initialize Services
 export const telegramService = new TelegramService(process.env.TELEGRAM_BOT_TOKEN || '');
 export const discordService = new DiscordService();
+export const whatsappService = new WhatsAppService();
 const schedulerService = new SchedulerService(telegramService, discordService);
 schedulerService.init();
 
