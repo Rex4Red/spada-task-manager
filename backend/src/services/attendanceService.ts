@@ -4,6 +4,7 @@ import fs from 'fs';
 import prisma from '../config/database';
 import { TelegramService } from './telegramService';
 import { DiscordService, DiscordColors } from './discordService';
+import { WhatsAppService } from './whatsappService';
 
 interface AttendanceResult {
     success: boolean;
@@ -367,6 +368,35 @@ export class AttendanceService {
         } else {
             await discordService.sendEmbed(webhookUrl, embed);
         }
+    }
+
+    /**
+     * Send WhatsApp notification with result
+     */
+    async sendWhatsAppNotification(
+        whatsappService: WhatsAppService,
+        phoneNumber: string,
+        courseName: string,
+        result: AttendanceResult
+    ): Promise<void> {
+        let emoji = '❓';
+        switch (result.status) {
+            case 'SUCCESS': emoji = '✅'; break;
+            case 'FAILED': emoji = '❌'; break;
+            case 'NOT_AVAILABLE': emoji = 'ℹ️'; break;
+            case 'TIMEOUT': emoji = '⏰'; break;
+            case 'ERROR': emoji = '⚠️'; break;
+        }
+
+        const message = `${emoji} *Auto Attendance Report*
+
+📚 *Course:* ${courseName}
+📊 *Status:* ${result.status}
+💬 *Message:* ${result.message}
+
+_SPADA Task Manager_`;
+
+        await whatsappService.sendMessage(phoneNumber, message);
     }
 }
 

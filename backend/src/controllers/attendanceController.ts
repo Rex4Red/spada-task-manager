@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/database';
 import { AttendanceService } from '../services/attendanceService';
-import { telegramService, discordService } from '../app';
+import { telegramService, discordService, whatsappService } from '../app';
 import { decrypt } from '../utils/encryption';
 
 /**
@@ -156,7 +156,8 @@ export const testAttendance = async (req: Request, res: Response) => {
             where: { id: userId },
             include: {
                 telegramConfig: true,
-                discordConfig: true
+                discordConfig: true,
+                whatsappConfig: true
             }
         });
 
@@ -220,6 +221,16 @@ export const testAttendance = async (req: Request, res: Response) => {
             await attendanceService.sendDiscordNotification(
                 discordService,
                 user.discordConfig.webhookUrl,
+                course.name,
+                result
+            );
+        }
+
+        // Send WhatsApp notification if configured
+        if (user.whatsappConfig?.isActive && user.whatsappConfig?.phoneNumber) {
+            await attendanceService.sendWhatsAppNotification(
+                whatsappService,
+                user.whatsappConfig.phoneNumber,
                 course.name,
                 result
             );

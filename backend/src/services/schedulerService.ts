@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import prisma from '../config/database';
 import { TelegramService } from './telegramService';
 import { DiscordService, DiscordColors } from './discordService';
+import { WhatsAppService } from './whatsappService';
 import { AttendanceService } from './attendanceService';
 import { ScraperService } from './scraperService';
 import { saveCoursesToDb } from './courseService';
@@ -11,10 +12,12 @@ import { formatDistanceToNow } from 'date-fns';
 export class SchedulerService {
     private telegramService: TelegramService;
     private discordService: DiscordService;
+    private whatsappService: WhatsAppService;
 
-    constructor(telegramService: TelegramService, discordService?: DiscordService) {
+    constructor(telegramService: TelegramService, discordService?: DiscordService, whatsappService?: WhatsAppService) {
         this.telegramService = telegramService;
         this.discordService = discordService || new DiscordService();
+        this.whatsappService = whatsappService || new WhatsAppService();
     }
 
     public init() {
@@ -59,7 +62,8 @@ export class SchedulerService {
                             user: {
                                 include: {
                                     telegramConfig: true,
-                                    discordConfig: true
+                                    discordConfig: true,
+                                    whatsappConfig: true
                                 }
                             }
                         }
@@ -137,6 +141,16 @@ export class SchedulerService {
                 await attendanceService.sendDiscordNotification(
                     this.discordService,
                     user.discordConfig.webhookUrl,
+                    schedule.course.name,
+                    result
+                );
+            }
+
+            // Send WhatsApp notification
+            if (user.whatsappConfig?.isActive && user.whatsappConfig?.phoneNumber) {
+                await attendanceService.sendWhatsAppNotification(
+                    this.whatsappService,
+                    user.whatsappConfig.phoneNumber,
                     schedule.course.name,
                     result
                 );
