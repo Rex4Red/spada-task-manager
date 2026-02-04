@@ -371,7 +371,7 @@ export class AttendanceService {
     }
 
     /**
-     * Send WhatsApp notification with result
+     * Send WhatsApp notification with result (includes screenshot if available)
      */
     async sendWhatsAppNotification(
         whatsappService: WhatsAppService,
@@ -388,7 +388,7 @@ export class AttendanceService {
             case 'ERROR': emoji = '⚠️'; break;
         }
 
-        const message = `${emoji} *Auto Attendance Report*
+        const caption = `${emoji} *Auto Attendance Report*
 
 📚 *Course:* ${courseName}
 📊 *Status:* ${result.status}
@@ -396,7 +396,23 @@ export class AttendanceService {
 
 _SPADA Task Manager_`;
 
-        await whatsappService.sendMessage(phoneNumber, message);
+        // Send with screenshot if available
+        if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
+            try {
+                const imageBuffer = fs.readFileSync(result.screenshotPath);
+                const base64Image = imageBuffer.toString('base64');
+                const mimetype = result.screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+
+                await whatsappService.sendImage(phoneNumber, base64Image, caption, mimetype);
+            } catch (e) {
+                console.error('Error reading screenshot for WhatsApp:', e);
+                // Fallback to text message
+                await whatsappService.sendMessage(phoneNumber, caption);
+            }
+        } else {
+            // Send text only
+            await whatsappService.sendMessage(phoneNumber, caption);
+        }
     }
 }
 

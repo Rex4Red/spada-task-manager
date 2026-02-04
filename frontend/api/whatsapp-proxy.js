@@ -1,5 +1,6 @@
 // Vercel Serverless Function - WhatsApp Bot Proxy
 // Forwards requests from HF backend to Koyeb WhatsApp bot
+// Supports both text messages and image sending
 
 export default async function handler(req, res) {
     // Set CORS headers
@@ -25,10 +26,10 @@ export default async function handler(req, res) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const { to, message } = req.body;
+    const { to, message, type, media, caption } = req.body;
 
-    if (!to || !message) {
-        return res.status(400).json({ ok: false, error: 'Missing "to" or "message"' });
+    if (!to) {
+        return res.status(400).json({ ok: false, error: 'Missing "to"' });
     }
 
     // WhatsApp bot config
@@ -36,13 +37,31 @@ export default async function handler(req, res) {
     const apiKey = process.env.WHATSAPP_API_KEY || '123230161';
 
     try {
+        let payload;
+
+        // Check if it's an image or text message
+        if (type === 'image' && media) {
+            // Image message
+            payload = {
+                to,
+                type: 'image',
+                media,
+                caption: caption || ''
+            };
+        } else if (message) {
+            // Text message
+            payload = { to, message };
+        } else {
+            return res.status(400).json({ ok: false, error: 'Missing "message" or "media"' });
+        }
+
         const response = await fetch(`${botUrl}/send`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-API-Key': apiKey,
             },
-            body: JSON.stringify({ to, message }),
+            body: JSON.stringify(payload),
         });
 
         if (response.ok) {

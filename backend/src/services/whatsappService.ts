@@ -139,4 +139,118 @@ export class WhatsAppService {
             return { ok: false, error: e.message };
         }
     }
+
+    /**
+     * Send image via proxy
+     */
+    private async sendImageViaProxy(
+        phoneNumber: string,
+        base64Image: string,
+        caption: string,
+        mimetype: string = 'image/png'
+    ): Promise<{ success: boolean; error?: string }> {
+        if (!this.proxyUrl) {
+            return { success: false, error: 'No proxy URL configured' };
+        }
+
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
+        if (this.proxySecret) {
+            headers['X-Proxy-Secret'] = this.proxySecret;
+        }
+
+        const response = await fetch(this.proxyUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                to: phoneNumber,
+                type: 'image',
+                media: { base64: base64Image, mimetype },
+                caption
+            }),
+        });
+
+        if (response.ok) {
+            return { success: true };
+        }
+
+        const errorText = await response.text();
+        return { success: false, error: `Proxy error: ${response.status} - ${errorText}` };
+    }
+
+    /**
+     * Send image directly
+     */
+    private async sendImageDirect(
+        phoneNumber: string,
+        base64Image: string,
+        caption: string,
+        mimetype: string = 'image/png'
+    ): Promise<{ success: boolean; error?: string }> {
+        const response = await fetch(`${this.botUrl}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': this.apiKey,
+            },
+            body: JSON.stringify({
+                to: phoneNumber,
+                type: 'image',
+                media: { base64: base64Image, mimetype },
+                caption
+            }),
+        });
+
+        if (response.ok) {
+            return { success: true };
+        }
+
+        const errorText = await response.text();
+        return { success: false, error: `Direct error: ${response.status} - ${errorText}` };
+    }
+
+    /**
+     * Send image to WhatsApp
+     */
+    public async sendImage(
+        phoneNumber: string,
+        base64Image: string,
+        caption: string,
+        mimetype: string = 'image/png'
+    ): Promise<{ success: boolean; error?: string }> {
+        if (!phoneNumber) {
+            return { success: false, error: 'Phone number not provided' };
+        }
+
+        const normalizedPhone = phoneNumber.replace(/[+\s-]/g, '');
+        console.log(`[WhatsApp] Sending image to ${normalizedPhone}...`);
+
+        // Try via proxy first
+        if (this.proxyUrl) {
+            try {
+                const result = await this.sendImageViaProxy(normalizedPhone, base64Image, caption, mimetype);
+                if (result.success) {
+                    console.log('✅ WhatsApp image sent via proxy');
+                    return result;
+                }
+                console.log('Image proxy failed:', result.error);
+            } catch (e: any) {
+                console.log('Image proxy exception:', e.message);
+            }
+        }
+
+        // Fall back to direct
+        try {
+            const result = await this.sendImageDirect(normalizedPhone, base64Image, caption, mimetype);
+            if (result.success) {
+                console.log('✅ WhatsApp image sent directly');
+                return result;
+            }
+            return result;
+        } catch (e: any) {
+            console.error('WhatsApp image send error:', e);
+            return { success: false, error: e.message };
+        }
+    }
 }
