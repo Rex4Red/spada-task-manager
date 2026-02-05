@@ -1,6 +1,50 @@
 // Vercel Serverless Function - WhatsApp Bot Proxy
 // Forwards requests from HF backend to Koyeb WhatsApp bot
-// Supports both text messages and image sending
+// Supports both text messages and image sending with retry logic
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function sendToWhatsApp(botUrl, apiKey, payload, retryCount = 0) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+        const response = await fetch(`${botUrl}/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-API-Key': apiKey,
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            const data = await response.json().catch(() => ({}));
+            return { ok: true, message: 'Sent to WhatsApp', data };
+        } else {
+            const errorText = await response.text();
+            throw new Error(`WhatsApp API error: ${response.status} - ${errorText}`);
+        }
+    } catch (error) {
+        console.log(`Attempt ${retryCount + 1} failed:`, error.message);
+
+        if (retryCount < MAX_RETRIES - 1) {
+            console.log(`Retrying in ${RETRY_DELAY_MS}ms...`);
+            await sleep(RETRY_DELAY_MS);
+            return sendToWhatsApp(botUrl, apiKey, payload, retryCount + 1);
+        }
+
+        throw error;
+    }
+}
 
 export default async function handler(req, res) {
     // Set CORS headers
@@ -55,25 +99,10 @@ export default async function handler(req, res) {
             return res.status(400).json({ ok: false, error: 'Missing "message" or "media"' });
         }
 
-        const response = await fetch(`${botUrl}/send`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-API-Key': apiKey,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-            const data = await response.json().catch(() => ({}));
-            return res.status(200).json({ ok: true, message: 'Sent to WhatsApp', data });
-        } else {
-            const errorText = await response.text();
-            console.error('WhatsApp bot error:', response.status, errorText);
-            return res.status(400).json({ ok: false, error: `WhatsApp API error: ${response.status} - ${errorText}` });
-        }
+        const result = await sendToWhatsApp(botUrl, apiKey, payload);
+        return res.status(200).json(result);
     } catch (error) {
-        console.error('WhatsApp proxy error:', error);
+        console.error('WhatsApp proxy error after retries:', error);
         return res.status(500).json({ ok: false, error: error.message || 'Internal error' });
     }
 }
