@@ -5,7 +5,8 @@ import {
     getUsers,
     getUserDetail,
     deleteUser,
-    getRecentActivity
+    getRecentActivity,
+    cleanupOrphanData
 } from '../controllers/adminController';
 import { adminAuth } from '../middleware/adminAuth';
 
@@ -21,5 +22,7 @@ router.get('/users', adminAuth, getUsers);
 router.get('/users/:id', adminAuth, getUserDetail);
 router.delete('/users/:id', adminAuth, deleteUser);
 router.get('/activity', adminAuth, getRecentActivity);
+router.post('/cleanup', adminAuth, cleanupOrphanData);
 
 export default router;
+

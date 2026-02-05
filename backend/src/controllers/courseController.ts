@@ -74,12 +74,12 @@ export const deleteCourse = async (req: Request, res: Response) => {
     }
 
     try {
-        const updatedCourse = await prisma.course.update({
-            where: { id: courseId },
-            data: { isDeleted: true }
+        // Hard delete - this will cascade delete related tasks, notifications, and attendance schedules
+        await prisma.course.delete({
+            where: { id: courseId }
         });
 
-        res.status(200).json({ message: 'Course deleted successfully', data: updatedCourse });
+        res.status(200).json({ message: 'Course and related tasks deleted successfully' });
     } catch (error: any) {
         console.error('Delete course error:', error);
         res.status(500).json({ message: 'Error deleting course', error: error.message });

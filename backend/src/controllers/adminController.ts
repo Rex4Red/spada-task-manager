@@ -235,3 +235,40 @@ export const getRecentActivity = async (req: AdminRequest, res: Response) => {
         res.status(500).json({ success: false, message: 'Failed to get activity' });
     }
 };
+
+/**
+ * Cleanup orphan tasks and soft-deleted courses
+ * Deletes courses marked as isDeleted and cascades to their tasks
+ */
+export const cleanupOrphanData = async (req: AdminRequest, res: Response) => {
+    try {
+        // Find soft-deleted courses
+        const deletedCourses = await prisma.course.findMany({
+            where: { isDeleted: true },
+            select: { id: true, name: true }
+        });
+
+        // Hard delete soft-deleted courses (will cascade to tasks)
+        const deleteResult = await prisma.course.deleteMany({
+            where: { isDeleted: true }
+        });
+
+        // Also delete any tasks that are soft-deleted
+        const deletedTasks = await prisma.task.deleteMany({
+            where: { isDeleted: true }
+        });
+
+        res.json({
+            success: true,
+            message: `Cleanup complete`,
+            data: {
+                deletedCourses: deleteResult.count,
+                deletedTasks: deletedTasks.count,
+                courseNames: deletedCourses.map(c => c.name)
+            }
+        });
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ success: false, message: 'Failed to cleanup orphan data' });
+    }
+};
