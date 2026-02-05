@@ -40,7 +40,37 @@ export class SchedulerService {
             await this.checkAttendanceSchedules();
         });
 
-        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min)');
+        // 4. WhatsApp Bot Keep-Alive: Every 5 minutes
+        cron.schedule('*/5 * * * *', async () => {
+            await this.pingWhatsAppBot();
+        });
+
+        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min), WhatsApp Keep-Alive (5 mins)');
+    }
+
+    /**
+     * Ping WhatsApp bot to keep it alive on Koyeb free tier
+     */
+    private async pingWhatsAppBot() {
+        const botUrl = process.env.WHATSAPP_BOT_URL || 'https://very-ardith-bot-wa-absen-spada-69b791b2.koyeb.app';
+
+        try {
+            const response = await fetch(`${botUrl}/status`, {
+                method: 'GET',
+                headers: {
+                    'X-API-Key': process.env.WHATSAPP_API_KEY || '123230161'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`[WhatsApp Keep-Alive] Bot status: ${data.status || 'connected'}`);
+            } else {
+                console.log(`[WhatsApp Keep-Alive] Ping response: ${response.status}`);
+            }
+        } catch (error: any) {
+            console.log(`[WhatsApp Keep-Alive] Ping failed: ${error.message}`);
+        }
     }
 
     /**
