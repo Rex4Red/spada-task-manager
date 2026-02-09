@@ -50,9 +50,8 @@ export class AttendanceService {
                     '--metrics-recording-only',
                     '--mute-audio',
                     '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
                     '--safebrowsing-disable-auto-update',
+                    '--disable-features=IsolateOrigins,site-per-process',
                     '--js-flags=--max-old-space-size=256',
                     '--window-size=1280,720'
                 ],

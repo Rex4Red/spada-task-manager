@@ -21,14 +21,16 @@ export class ScraperService {
                     '--disable-accelerated-2d-canvas',
                     '--disable-gpu',
                     '--no-first-run',
-                    '--no-zygote',
-                    '--single-process',
                     '--disable-extensions',
                     '--disable-background-networking',
                     '--disable-default-apps',
-                    '--disable-sync'
+                    '--disable-sync',
+                    '--disable-translate',
+                    '--disable-features=IsolateOrigins,site-per-process',
+                    '--js-flags=--max-old-space-size=256'
                 ],
-                defaultViewport: { width: 1280, height: 720 }
+                defaultViewport: { width: 1280, height: 720 },
+                timeout: 60000
             });
             this.page = await this.browser.newPage();
             // Set user agent to avoid detection (basic)
