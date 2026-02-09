@@ -13,8 +13,21 @@ export class ScraperService {
             console.log('Launching Puppeteer...');
             this.browser = await puppeteer.launch({
                 headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                defaultViewport: null
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--single-process',
+                    '--disable-extensions',
+                    '--disable-background-networking',
+                    '--disable-default-apps',
+                    '--disable-sync'
+                ],
+                defaultViewport: { width: 1280, height: 720 }
             });
             this.page = await this.browser.newPage();
             // Set user agent to avoid detection (basic)
