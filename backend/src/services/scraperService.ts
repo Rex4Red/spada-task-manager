@@ -45,41 +45,67 @@ export class ScraperService {
         }
 
         try {
-            console.log(`Navigating to login page: ${this.baseUrl}/login/index.php`);
-            await this.page!.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'networkidle2' });
+            console.log(`[Scraper] Navigating to login page: ${this.baseUrl}/login/index.php`);
+            await this.page!.goto(`${this.baseUrl}/login/index.php`, {
+                waitUntil: 'networkidle2',
+                timeout: 60000
+            });
+
+            // Wait a bit for page to stabilize
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Check if already logged in by looking for logout button or dashboard element
             const isLoggedIn = await this.page!.$('.logininfo a[href*="logout.php"]');
             if (isLoggedIn) {
-                console.log('Already logged in.');
+                console.log('[Scraper] Already logged in.');
                 return true;
             }
 
-            console.log('Typing credentials...');
-            await this.page!.type('#username', username);
-            await this.page!.type('#password', passwordUnencrypted);
+            // Check if login form exists
+            const usernameField = await this.page!.$('#username');
+            const passwordField = await this.page!.$('#password');
+            const loginBtn = await this.page!.$('#loginbtn');
 
-            console.log('Clicking login...');
+            if (!usernameField || !passwordField || !loginBtn) {
+                console.error('[Scraper] Login form elements not found!');
+                console.error(`Username field: ${!!usernameField}, Password field: ${!!passwordField}, Login btn: ${!!loginBtn}`);
+                // Take screenshot for debugging
+                const url = this.page!.url();
+                console.error(`[Scraper] Current URL: ${url}`);
+                return false;
+            }
+
+            console.log('[Scraper] Typing credentials...');
+            await this.page!.type('#username', username, { delay: 50 });
+            await this.page!.type('#password', passwordUnencrypted, { delay: 50 });
+
+            console.log('[Scraper] Clicking login...');
             await Promise.all([
-                this.page!.waitForNavigation({ waitUntil: 'networkidle2' }),
+                this.page!.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
                 this.page!.click('#loginbtn')
             ]);
+
+            // Wait for page to settle
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Check for login success (e.g., redirect to dashboard or existence of logout link)
             const success = await this.page!.$('.logininfo a[href*="logout.php"]');
             if (success) {
-                console.log('Login successful!');
+                console.log('[Scraper] Login successful!');
                 return true;
             } else {
-                console.error('Login failed. Check credentials.');
+                console.error('[Scraper] Login failed. Check credentials.');
+                const currentUrl = this.page!.url();
+                console.error(`[Scraper] Current URL after login attempt: ${currentUrl}`);
                 // Optional: Check for error message on page
                 const errorMsg = await this.page!.$eval('.loginerrors', el => el.textContent).catch(() => null);
-                if (errorMsg) console.error(`SPADA Error: ${errorMsg}`);
+                if (errorMsg) console.error(`[Scraper] SPADA Error: ${errorMsg}`);
                 return false;
             }
 
-        } catch (error) {
-            console.error('Error during login:', error);
+        } catch (error: any) {
+            console.error('[Scraper] Error during login:', error.message);
+            console.error('[Scraper] Full error:', error);
             return false;
         }
     }
