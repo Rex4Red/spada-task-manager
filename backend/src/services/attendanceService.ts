@@ -454,33 +454,49 @@ export class AttendanceService {
 
 _SPADA Task Manager_`;
 
-        // Try sending with screenshot, fallback to text-only
-        let sent = false;
-
+        // Upload screenshot to Telegra.ph and include link in message
+        let screenshotUrl = '';
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
             try {
                 const imageBuffer = fs.readFileSync(result.screenshotPath);
-                const base64Image = imageBuffer.toString('base64');
-                const mimetype = result.screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
-
-                const imgResult = await whatsappService.sendImage(phoneNumber, base64Image, caption, mimetype);
-                if (imgResult.success) {
-                    sent = true;
-                } else {
-                    console.log('[WhatsApp] Image send failed, falling back to text:', imgResult.error);
-                }
+                screenshotUrl = await this.uploadToTelegraph(imageBuffer);
+                console.log('[WhatsApp] Screenshot uploaded:', screenshotUrl);
             } catch (e) {
-                console.error('Error reading screenshot for WhatsApp:', e);
+                console.error('[WhatsApp] Screenshot upload failed:', e);
             }
         }
 
-        // Fallback: send text-only message
-        if (!sent) {
-            const textResult = await whatsappService.sendMessage(phoneNumber, caption);
-            if (!textResult.success) {
-                console.error('[WhatsApp] Text notification also failed:', textResult.error);
-            }
+        // Build message with screenshot link if available
+        const fullMessage = screenshotUrl
+            ? `${caption}\n\n📷 Screenshot: ${screenshotUrl}`
+            : caption;
+
+        const textResult = await whatsappService.sendMessage(phoneNumber, fullMessage);
+        if (!textResult.success) {
+            console.error('[WhatsApp] Notification failed:', textResult.error);
         }
+    }
+
+    /**
+     * Upload image to Telegra.ph (free, no auth required)
+     */
+    private async uploadToTelegraph(imageBuffer: Buffer): Promise<string> {
+        const FormData = (await import('form-data')).default;
+        const form = new FormData();
+        form.append('file', imageBuffer, { filename: 'screenshot.png', contentType: 'image/png' });
+
+        const response = await fetch('https://telegra.ph/upload', {
+            method: 'POST',
+            // @ts-ignore
+            body: form,
+            headers: form.getHeaders(),
+        });
+
+        const data = await response.json() as any;
+        if (data && data[0] && data[0].src) {
+            return `https://telegra.ph${data[0].src}`;
+        }
+        throw new Error('Telegraph upload failed: ' + JSON.stringify(data));
     }
 }
 
