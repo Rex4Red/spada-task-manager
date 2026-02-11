@@ -9,12 +9,53 @@ const AdminDashboard = () => {
     const [recentUsers, setRecentUsers] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [waStatus, setWaStatus] = useState('disconnected');
+    const [waQrCode, setWaQrCode] = useState(null);
+    const [waConnecting, setWaConnecting] = useState(false);
 
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
 
     useEffect(() => {
         fetchData();
+        pollWaStatus();
     }, []);
+
+    useEffect(() => {
+        if (waStatus === 'qr' || waStatus === 'connecting') {
+            const interval = setInterval(pollWaStatus, 3000);
+            return () => clearInterval(interval);
+        }
+    }, [waStatus]);
+
+    const pollWaStatus = async () => {
+        try {
+            const res = await fetch(`${API_URL}/whatsapp/status`);
+            const data = await res.json();
+            setWaStatus(data.status);
+            setWaQrCode(data.qrCode);
+        } catch (e) { /* silent */ }
+    };
+
+    const handleWaConnect = async () => {
+        setWaConnecting(true);
+        try {
+            await fetch(`${API_URL}/whatsapp/connect`, { method: 'POST' });
+            setTimeout(pollWaStatus, 2000);
+        } catch (e) {
+            alert('Failed to start WhatsApp');
+        } finally {
+            setWaConnecting(false);
+        }
+    };
+
+    const handleWaLogout = async () => {
+        if (!confirm('Disconnect WhatsApp?')) return;
+        try {
+            await fetch(`${API_URL}/whatsapp/logout`, { method: 'POST' });
+            setWaStatus('disconnected');
+            setWaQrCode(null);
+        } catch (e) { alert('Logout failed'); }
+    };
 
     const fetchData = async () => {
         try {
@@ -73,6 +114,57 @@ const AdminDashboard = () => {
                                     <p className="text-[#9dabb9] text-xs">{stat.label}</p>
                                 </div>
                             ))}
+                        </div>
+
+                        {/* WhatsApp Connection */}
+                        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="inline-flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-400">
+                                        <span className="material-symbols-outlined text-white text-xl">chat</span>
+                                    </div>
+                                    <div>
+                                        <h2 className="text-white font-semibold">WhatsApp Bot</h2>
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-2 h-2 rounded-full ${waStatus === 'connected' ? 'bg-green-500' : waStatus === 'qr' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                            <span className="text-[#9dabb9] text-xs">
+                                                {waStatus === 'connected' ? 'Connected' : waStatus === 'qr' ? 'Waiting for QR scan' : waStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-2">
+                                    {waStatus === 'disconnected' && (
+                                        <button onClick={handleWaConnect} disabled={waConnecting}
+                                            className="px-4 py-1.5 bg-[#25D366] hover:bg-[#20BD5A] text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-70">
+                                            {waConnecting ? 'Starting...' : 'Connect'}
+                                        </button>
+                                    )}
+                                    {waStatus === 'connected' && (
+                                        <button onClick={handleWaLogout}
+                                            className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
+                                            Disconnect
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {waStatus === 'qr' && waQrCode && (
+                                <div className="flex flex-col items-center gap-3 py-4 border-t border-[#30363d]">
+                                    <p className="text-[#9dabb9] text-sm">Scan this QR code with WhatsApp:</p>
+                                    <div className="bg-white p-3 rounded-xl">
+                                        <img src={waQrCode} alt="QR Code" className="w-64 h-64" />
+                                    </div>
+                                    <p className="text-xs text-[#6e7b8b]">WhatsApp → Settings → Linked Devices → Link a Device</p>
+                                </div>
+                            )}
+
+                            {waStatus === 'connecting' && (
+                                <div className="flex items-center justify-center py-4 border-t border-[#30363d]">
+                                    <div className="animate-spin w-6 h-6 border-3 border-[#25D366] border-t-transparent rounded-full"></div>
+                                    <span className="ml-3 text-[#9dabb9] text-sm">Connecting...</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Recent Users & Activity */}
