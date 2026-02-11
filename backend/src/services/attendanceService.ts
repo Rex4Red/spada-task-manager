@@ -479,17 +479,16 @@ _SPADA Task Manager_`;
 
     /**
      * Upload image to Telegra.ph (free, no auth required)
+     * Uses Node 18 native FormData + Blob (compatible with native fetch)
      */
     private async uploadToTelegraph(imageBuffer: Buffer): Promise<string> {
-        const FormData = (await import('form-data')).default;
-        const form = new FormData();
-        form.append('file', imageBuffer, { filename: 'screenshot.png', contentType: 'image/png' });
+        const blob = new Blob([new Uint8Array(imageBuffer)], { type: 'image/png' });
+        const formData = new FormData();
+        formData.append('file', blob, 'screenshot.png');
 
         const response = await fetch('https://telegra.ph/upload', {
             method: 'POST',
-            // @ts-ignore
-            body: form,
-            headers: form.getHeaders(),
+            body: formData,
         });
 
         const data = await response.json() as any;
