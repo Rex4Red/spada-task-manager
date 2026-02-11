@@ -43,8 +43,8 @@ export class WhatsAppService {
      * Initialize the WhatsApp client connection
      */
     async initClient(): Promise<void> {
-        if (this.status === 'connecting' || this.status === 'connected') {
-            console.log(`[WhatsApp] Already ${this.status}, skipping init`);
+        if (this.status === 'connected') {
+            console.log(`[WhatsApp] Already connected, skipping init`);
             return;
         }
 
@@ -54,7 +54,17 @@ export class WhatsAppService {
             console.log('[WhatsApp] Initializing Baileys client...');
 
             const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
-            const { version } = await fetchLatestBaileysVersion();
+
+            // Use hardcoded version to avoid network timeout on fetchLatestBaileysVersion
+            let version: [number, number, number];
+            try {
+                const latest = await fetchLatestBaileysVersion();
+                version = latest.version;
+                console.log(`[WhatsApp] Using fetched version: ${version}`);
+            } catch (e) {
+                version = [2, 3000, 1015901307];
+                console.log(`[WhatsApp] Version fetch failed, using fallback: ${version}`);
+            }
 
             this.socket = makeWASocket({
                 version,
@@ -62,11 +72,14 @@ export class WhatsAppService {
                     creds: state.creds,
                     keys: makeCacheableSignalKeyStore(state.keys, this.logger),
                 },
-                printQRInTerminal: true, // Also print in terminal for backup
+                printQRInTerminal: true,
                 logger: this.logger,
                 browser: ['SPADA Task Manager', 'Chrome', '120.0.0'],
                 generateHighQualityLinkPreview: false,
                 markOnlineOnConnect: false,
+                connectTimeoutMs: 60_000,        // 60s timeout (default 20s)
+                retryRequestDelayMs: 2000,        // 2s between retries
+                defaultQueryTimeoutMs: 60_000,    // 60s query timeout
             });
 
             // Handle connection updates
@@ -98,9 +111,10 @@ export class WhatsAppService {
 
                     if (shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
                         this.reconnectAttempts++;
-                        this.status = 'disconnected';
+                        this.status = 'connecting'; // Keep as connecting so UI shows retry progress
+                        this.lastError = `Retrying... attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} (code: ${statusCode})`;
                         console.log(`[WhatsApp] Reconnecting... attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-                        setTimeout(() => this.initClient(), 5000);
+                        setTimeout(() => this.initClient(), 3000);
                     } else {
                         this.status = 'disconnected';
                         this.socket = null;
