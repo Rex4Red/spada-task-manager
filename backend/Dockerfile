@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 
 # Install dependencies for Puppeteer/Chromium
 # Based on usage documentation for Puppeteer in Docker
