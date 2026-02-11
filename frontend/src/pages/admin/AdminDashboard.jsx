@@ -38,11 +38,14 @@ const AdminDashboard = () => {
 
     const handleWaConnect = async () => {
         setWaConnecting(true);
+        setWaStatus('connecting'); // Immediately trigger polling loop
         try {
             await fetch(`${API_URL}/whatsapp/connect`, { method: 'POST' });
-            setTimeout(pollWaStatus, 2000);
+            // Poll immediately after connect response
+            await pollWaStatus();
         } catch (e) {
             alert('Failed to start WhatsApp');
+            setWaStatus('disconnected');
         } finally {
             setWaConnecting(false);
         }
