@@ -9,57 +9,37 @@ const AdminDashboard = () => {
     const [recentUsers, setRecentUsers] = useState([]);
     const [recentActivity, setRecentActivity] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [waStatus, setWaStatus] = useState('disconnected');
-    const [waQrCode, setWaQrCode] = useState(null);
-    const [waConnecting, setWaConnecting] = useState(false);
-    const [waError, setWaError] = useState(null);
+    const [waStatus, setWaStatus] = useState(null);
 
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
 
     useEffect(() => {
         fetchData();
-        pollWaStatus();
+        fetchWaStatus();
     }, []);
 
-    useEffect(() => {
-        if (waStatus === 'qr' || waStatus === 'connecting') {
-            const interval = setInterval(pollWaStatus, 3000);
-            return () => clearInterval(interval);
-        }
-    }, [waStatus]);
-
-    const pollWaStatus = async () => {
+    const fetchWaStatus = async () => {
         try {
             const res = await fetch(`${API_URL}/whatsapp/status`);
             const data = await res.json();
-            setWaStatus(data.status);
-            setWaQrCode(data.qrCode);
-            setWaError(data.error);
-        } catch (e) { setWaError(e.message); }
+            setWaStatus(data);
+        } catch (e) { /* silent */ }
     };
 
-    const handleWaConnect = async () => {
-        setWaConnecting(true);
-        setWaStatus('connecting'); // Immediately trigger polling loop
+    const handleWaTest = async () => {
+        const phone = prompt('Enter phone number to test (e.g. 628xxx):');
+        if (!phone) return;
         try {
-            await fetch(`${API_URL}/whatsapp/connect`, { method: 'POST' });
-            // Poll immediately after connect response
-            await pollWaStatus();
+            const res = await fetch(`${API_URL}/whatsapp/test`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: phone, message: '✅ SPADA WhatsApp test notification!' }),
+            });
+            const data = await res.json();
+            alert(data.success ? 'Test message sent!' : `Failed: ${data.error}`);
         } catch (e) {
-            alert('Failed to start WhatsApp');
-            setWaStatus('disconnected');
-        } finally {
-            setWaConnecting(false);
+            alert('Failed to send test: ' + e.message);
         }
-    };
-
-    const handleWaLogout = async () => {
-        if (!confirm('Disconnect WhatsApp?')) return;
-        try {
-            await fetch(`${API_URL}/whatsapp/logout`, { method: 'POST' });
-            setWaStatus('disconnected');
-            setWaQrCode(null);
-        } catch (e) { alert('Logout failed'); }
     };
 
     const fetchData = async () => {
@@ -123,57 +103,34 @@ const AdminDashboard = () => {
 
                         {/* WhatsApp Connection */}
                         <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 mb-6">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="inline-flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-400">
                                         <span className="material-symbols-outlined text-white text-xl">chat</span>
                                     </div>
                                     <div>
-                                        <h2 className="text-white font-semibold">WhatsApp Bot</h2>
+                                        <h2 className="text-white font-semibold">WhatsApp Notifications</h2>
                                         <div className="flex items-center gap-2">
-                                            <div className={`w-2 h-2 rounded-full ${waStatus === 'connected' ? 'bg-green-500' : waStatus === 'qr' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                            <div className={`w-2 h-2 rounded-full ${waStatus?.ok ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
                                             <span className="text-[#9dabb9] text-xs">
-                                                {waStatus === 'connected' ? 'Connected' : waStatus === 'qr' ? 'Waiting for QR scan' : waStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
+                                                {waStatus?.ok ? `Active — ${waStatus.status}` : waStatus?.error || 'Checking...'}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex gap-2">
-                                    {waStatus === 'disconnected' && (
-                                        <button onClick={handleWaConnect} disabled={waConnecting}
-                                            className="px-4 py-1.5 bg-[#25D366] hover:bg-[#20BD5A] text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-70">
-                                            {waConnecting ? 'Starting...' : 'Connect'}
-                                        </button>
-                                    )}
-                                    {waStatus === 'connected' && (
-                                        <button onClick={handleWaLogout}
-                                            className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
-                                            Disconnect
-                                        </button>
-                                    )}
-                                </div>
+                                {waStatus?.ok && (
+                                    <button onClick={handleWaTest}
+                                        className="px-4 py-1.5 bg-[#25D366] hover:bg-[#20BD5A] text-white text-sm font-bold rounded-lg transition-colors">
+                                        Test
+                                    </button>
+                                )}
                             </div>
-
-                            {waStatus === 'qr' && waQrCode && (
-                                <div className="flex flex-col items-center gap-3 py-4 border-t border-[#30363d]">
-                                    <p className="text-[#9dabb9] text-sm">Scan this QR code with WhatsApp:</p>
-                                    <div className="bg-white p-3 rounded-xl">
-                                        <img src={waQrCode} alt="QR Code" className="w-64 h-64" />
-                                    </div>
-                                    <p className="text-xs text-[#6e7b8b]">WhatsApp → Settings → Linked Devices → Link a Device</p>
-                                </div>
-                            )}
-
-                            {waStatus === 'connecting' && (
-                                <div className="flex items-center justify-center py-4 border-t border-[#30363d]">
-                                    <div className="animate-spin w-6 h-6 border-3 border-[#25D366] border-t-transparent rounded-full"></div>
-                                    <span className="ml-3 text-[#9dabb9] text-sm">Connecting...</span>
-                                </div>
-                            )}
-
-                            {waError && waStatus === 'disconnected' && (
-                                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                    <p className="text-red-400 text-xs font-mono break-all">Error: {waError}</p>
+                            {!waStatus?.ok && waStatus?.error && (
+                                <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+                                    <p className="text-yellow-400 text-xs">
+                                        Setup: Register at <a href="https://fonnte.com" target="_blank" rel="noopener" className="underline">fonnte.com</a> →
+                                        Connect device → Add FONNTE_TOKEN to Vercel env vars
+                                    </p>
                                 </div>
                             )}
                         </div>

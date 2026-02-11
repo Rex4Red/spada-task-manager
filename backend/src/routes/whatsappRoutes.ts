@@ -5,39 +5,27 @@ const router = Router();
 
 /**
  * GET /api/whatsapp/status
- * Returns WhatsApp connection status and QR code if available
+ * Returns WhatsApp service status (Fonnte configuration status)
  */
-router.get('/status', (req: Request, res: Response) => {
-    const info = whatsappService.getConnectionInfo();
+router.get('/status', async (req: Request, res: Response) => {
+    const info = await whatsappService.checkStatus();
     res.json(info);
 });
 
 /**
- * POST /api/whatsapp/connect
- * Initialize WhatsApp client connection
+ * POST /api/whatsapp/test
+ * Send a test message
  */
-router.post('/connect', async (req: Request, res: Response) => {
-    try {
-        await whatsappService.initClient();
-        // Wait a moment for QR to generate
-        await new Promise(r => setTimeout(r, 2000));
-        const info = whatsappService.getConnectionInfo();
-        res.json({ message: 'WhatsApp client connecting...', ...info });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
+router.post('/test', async (req: Request, res: Response) => {
+    const { to, message } = req.body;
+    if (!to || !message) {
+        return res.status(400).json({ ok: false, error: 'Missing "to" or "message"' });
     }
-});
-
-/**
- * POST /api/whatsapp/logout
- * Disconnect WhatsApp and clear session
- */
-router.post('/logout', async (req: Request, res: Response) => {
     try {
-        await whatsappService.logout();
-        res.json({ message: 'WhatsApp disconnected and session cleared' });
+        const result = await whatsappService.sendMessage(to, message);
+        res.json(result);
     } catch (error: any) {
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ ok: false, error: error.message });
     }
 });
 

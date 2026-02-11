@@ -1,205 +1,25 @@
 /**
- * WhatsApp Service - Built-in WhatsApp client using Baileys
- * Runs directly in the backend, no external service needed.
- * QR code available via API for authentication.
+ * WhatsApp Service - HTTP-based using Fonnte.com API
+ * Routes through Vercel proxy (same pattern as Telegram/Discord)
+ * 
+ * Flow: HF Backend → Vercel Proxy → Fonnte API → WhatsApp
  */
 
-import makeWASocket, {
-    DisconnectReason,
-    useMultiFileAuthState,
-    WASocket,
-    fetchLatestBaileysVersion,
-    makeCacheableSignalKeyStore,
-} from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
-import * as QRCode from 'qrcode';
-import path from 'path';
-import fs from 'fs';
-import pino from 'pino';
-
-type WAStatus = 'disconnected' | 'qr' | 'connecting' | 'connected';
-
 export class WhatsAppService {
-    private socket: WASocket | null = null;
-    private qrCode: string | null = null; // base64 data URL
-    private status: WAStatus = 'disconnected';
-    private lastError: string | null = null;
-    private authDir: string;
-    private reconnectAttempts = 0;
-    private maxReconnectAttempts = 5;
-    private logger: any;
+    private proxyUrl: string;
 
     constructor() {
-        this.authDir = path.join(process.cwd(), 'whatsapp-auth');
-        // Ensure auth directory exists
-        if (!fs.existsSync(this.authDir)) {
-            fs.mkdirSync(this.authDir, { recursive: true });
-        }
-        this.logger = pino({ level: 'silent' }); // Suppress baileys verbose logs
-        console.log('WhatsApp Service initialized (built-in Baileys client)');
-    }
-
-    /**
-     * Initialize the WhatsApp client connection
-     */
-    async initClient(): Promise<void> {
-        if (this.status === 'connected') {
-            console.log(`[WhatsApp] Already connected, skipping init`);
-            return;
+        // Derive from TELEGRAM_PROXY_URL pattern, or use dedicated env var
+        this.proxyUrl = process.env.WHATSAPP_PROXY_URL || '';
+        if (!this.proxyUrl && process.env.TELEGRAM_PROXY_URL) {
+            this.proxyUrl = process.env.TELEGRAM_PROXY_URL.replace('/telegram-proxy', '/whatsapp-proxy');
         }
 
-        try {
-            this.status = 'connecting';
-            this.lastError = null;
-            console.log('[WhatsApp] Initializing Baileys client...');
-
-            const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
-
-            // Use hardcoded version to avoid network timeout on fetchLatestBaileysVersion
-            let version: [number, number, number];
-            try {
-                const latest = await fetchLatestBaileysVersion();
-                version = latest.version;
-                console.log(`[WhatsApp] Using fetched version: ${version}`);
-            } catch (e) {
-                version = [2, 3000, 1015901307];
-                console.log(`[WhatsApp] Version fetch failed, using fallback: ${version}`);
-            }
-
-            this.socket = makeWASocket({
-                version,
-                auth: {
-                    creds: state.creds,
-                    keys: makeCacheableSignalKeyStore(state.keys, this.logger),
-                },
-                printQRInTerminal: true,
-                logger: this.logger,
-                browser: ['SPADA Task Manager', 'Chrome', '120.0.0'],
-                generateHighQualityLinkPreview: false,
-                markOnlineOnConnect: false,
-                connectTimeoutMs: 60_000,        // 60s timeout (default 20s)
-                retryRequestDelayMs: 2000,        // 2s between retries
-                defaultQueryTimeoutMs: 60_000,    // 60s query timeout
-            });
-
-            // Handle connection updates
-            this.socket.ev.on('connection.update', async (update) => {
-                const { connection, lastDisconnect, qr } = update;
-
-                if (qr) {
-                    // Generate QR code as base64 data URL
-                    try {
-                        this.qrCode = await QRCode.toDataURL(qr, {
-                            width: 300,
-                            margin: 2,
-                            color: { dark: '#000000', light: '#ffffff' },
-                        });
-                        this.status = 'qr';
-                        console.log('[WhatsApp] QR code generated - scan from Settings page');
-                    } catch (err) {
-                        console.error('[WhatsApp] Failed to generate QR:', err);
-                    }
-                }
-
-                if (connection === 'close') {
-                    this.qrCode = null;
-                    const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-                    const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
-                    console.log(`[WhatsApp] Connection closed. Status: ${statusCode}, Reconnect: ${shouldReconnect}`);
-                    this.lastError = `Connection closed (code: ${statusCode})`;
-
-                    if (shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
-                        this.reconnectAttempts++;
-                        this.status = 'connecting'; // Keep as connecting so UI shows retry progress
-                        this.lastError = `Retrying... attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts} (code: ${statusCode})`;
-                        console.log(`[WhatsApp] Reconnecting... attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-                        setTimeout(() => this.initClient(), 3000);
-                    } else {
-                        this.status = 'disconnected';
-                        this.socket = null;
-                        if (statusCode === DisconnectReason.loggedOut) {
-                            console.log('[WhatsApp] Logged out. Clearing auth state...');
-                            this.clearAuthState();
-                        }
-                    }
-                }
-
-                if (connection === 'open') {
-                    this.status = 'connected';
-                    this.qrCode = null;
-                    this.reconnectAttempts = 0;
-                    console.log('[WhatsApp] ✅ Connected successfully!');
-                }
-            });
-
-            // Handle credential updates (save session)
-            this.socket.ev.on('creds.update', saveCreds);
-
-        } catch (error: any) {
-            console.error('[WhatsApp] Init error:', error);
-            this.lastError = error?.message || String(error);
-            this.status = 'disconnected';
-        }
+        console.log(`WhatsApp Service initialized (Fonnte via ${this.proxyUrl ? 'Vercel proxy' : 'direct'})`);
     }
 
     /**
-     * Get current connection status and QR code
-     */
-    getConnectionInfo(): { status: WAStatus; qrCode: string | null; error: string | null } {
-        return {
-            status: this.status,
-            qrCode: this.status === 'qr' ? this.qrCode : null,
-            error: this.lastError,
-        };
-    }
-
-    /**
-     * Logout and clear session
-     */
-    async logout(): Promise<void> {
-        try {
-            if (this.socket) {
-                await this.socket.logout();
-            }
-        } catch (e) {
-            console.error('[WhatsApp] Logout error:', e);
-        }
-        this.socket = null;
-        this.qrCode = null;
-        this.status = 'disconnected';
-        this.clearAuthState();
-        console.log('[WhatsApp] Logged out and session cleared');
-    }
-
-    /**
-     * Clear auth state files
-     */
-    private clearAuthState(): void {
-        try {
-            if (fs.existsSync(this.authDir)) {
-                fs.rmSync(this.authDir, { recursive: true, force: true });
-                fs.mkdirSync(this.authDir, { recursive: true });
-            }
-        } catch (e) {
-            console.error('[WhatsApp] Error clearing auth state:', e);
-        }
-    }
-
-    /**
-     * Format phone number for WhatsApp JID
-     */
-    private formatJid(phoneNumber: string): string {
-        // Remove non-digits
-        let phone = phoneNumber.replace(/\D/g, '');
-        // Remove leading + if any
-        if (phone.startsWith('+')) phone = phone.substring(1);
-        // Ensure it ends with @s.whatsapp.net
-        return `${phone}@s.whatsapp.net`;
-    }
-
-    /**
-     * Send a text message
+     * Send a text message via Fonnte API
      */
     public async sendMessage(
         phoneNumber: string,
@@ -209,68 +29,177 @@ export class WhatsAppService {
             return { success: false, error: 'Phone number not provided' };
         }
 
-        if (this.status !== 'connected' || !this.socket) {
-            return { success: false, error: 'WhatsApp not connected. Please scan QR code first.' };
+        // Try proxy first, then direct
+        if (this.proxyUrl) {
+            try {
+                console.log('[WhatsApp] Sending via Vercel proxy...');
+                const result = await this.sendViaProxy({
+                    target: this.formatPhone(phoneNumber),
+                    message,
+                });
+                if (result.success) {
+                    console.log('✅ WhatsApp sent via Vercel proxy');
+                    return result;
+                }
+                console.log('[WhatsApp] Proxy failed:', result.error);
+            } catch (e: any) {
+                console.log('[WhatsApp] Proxy exception:', e.message);
+            }
         }
 
+        // Fallback: direct to Fonnte API
         try {
-            const jid = this.formatJid(phoneNumber);
-            console.log(`[WhatsApp] Sending message to ${jid}...`);
-
-            await this.socket.sendMessage(jid, { text: message });
-            console.log('✅ WhatsApp message sent');
-            return { success: true };
-        } catch (error: any) {
-            console.error('[WhatsApp] Send error:', error);
-            return { success: false, error: error.message };
+            console.log('[WhatsApp] Trying direct Fonnte API...');
+            return await this.sendDirect({
+                target: this.formatPhone(phoneNumber),
+                message,
+            });
+        } catch (e: any) {
+            return { success: false, error: `All methods failed: ${e.message}` };
         }
     }
 
     /**
-     * Send an image with caption
+     * Send an image with caption via Fonnte API
      */
     public async sendImage(
         phoneNumber: string,
         base64Image: string,
         caption: string,
-        mimetype: string = 'image/png'
+        _mimetype: string = 'image/png'
     ): Promise<{ success: boolean; error?: string }> {
         if (!phoneNumber) {
             return { success: false, error: 'Phone number not provided' };
         }
 
-        if (this.status !== 'connected' || !this.socket) {
-            return { success: false, error: 'WhatsApp not connected' };
+        if (this.proxyUrl) {
+            try {
+                console.log('[WhatsApp] Sending image via Vercel proxy...');
+                const result = await this.sendViaProxy({
+                    target: this.formatPhone(phoneNumber),
+                    message: caption || '',
+                    type: 'image',
+                    url: `data:image/png;base64,${base64Image}`,
+                });
+                if (result.success) {
+                    console.log('✅ WhatsApp image sent via Vercel proxy');
+                    return result;
+                }
+            } catch (e: any) {
+                console.log('[WhatsApp] Image proxy exception:', e.message);
+            }
         }
 
+        // Fallback direct
         try {
-            const jid = this.formatJid(phoneNumber);
-            console.log(`[WhatsApp] Sending image to ${jid}...`);
-
-            // Convert base64 to buffer
-            const imageBuffer = Buffer.from(base64Image, 'base64');
-
-            await this.socket.sendMessage(jid, {
-                image: imageBuffer,
-                caption,
-                mimetype: mimetype as any,
+            return await this.sendDirect({
+                target: this.formatPhone(phoneNumber),
+                message: caption || '',
+                type: 'image',
+                url: `data:image/png;base64,${base64Image}`,
             });
-
-            console.log('✅ WhatsApp image sent');
-            return { success: true };
-        } catch (error: any) {
-            console.error('[WhatsApp] Send image error:', error);
-            return { success: false, error: error.message };
+        } catch (e: any) {
+            return { success: false, error: `All methods failed: ${e.message}` };
         }
     }
 
     /**
-     * Check bot status (compatible with old API)
+     * Send via Vercel proxy
+     */
+    private async sendViaProxy(payload: any): Promise<{ success: boolean; error?: string }> {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+            const response = await fetch(this.proxyUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Proxy-Secret': process.env.WHATSAPP_PROXY_SECRET || process.env.TELEGRAM_PROXY_SECRET || '',
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
+
+            const data = await response.json();
+
+            if (data.ok || data.status) {
+                return { success: true };
+            } else {
+                return { success: false, error: data.error || data.reason || 'Proxy returned error' };
+            }
+        } catch (e: any) {
+            if (e.name === 'AbortError') {
+                return { success: false, error: 'Proxy request timeout' };
+            }
+            return { success: false, error: e.message };
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    /**
+     * Send directly to Fonnte API (fallback, may not work on HF)
+     */
+    private async sendDirect(payload: any): Promise<{ success: boolean; error?: string }> {
+        const token = process.env.FONNTE_TOKEN || '';
+        if (!token) {
+            return { success: false, error: 'FONNTE_TOKEN not set' };
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+            const response = await fetch('https://api.fonnte.com/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+                signal: controller.signal,
+            });
+
+            const data = await response.json();
+
+            if (data.status) {
+                return { success: true };
+            } else {
+                return { success: false, error: data.reason || data.detail || 'Fonnte API error' };
+            }
+        } catch (e: any) {
+            if (e.name === 'AbortError') {
+                return { success: false, error: 'Fonnte request timeout' };
+            }
+            return { success: false, error: e.message };
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    /**
+     * Format phone number - ensure it starts with country code
+     */
+    private formatPhone(phone: string): string {
+        let cleaned = phone.replace(/[^0-9]/g, '');
+        // Convert 08xx to 628xx (Indonesia)
+        if (cleaned.startsWith('0')) {
+            cleaned = '62' + cleaned.substring(1);
+        }
+        return cleaned;
+    }
+
+    /**
+     * Check if service is configured
      */
     public async checkStatus(): Promise<{ ok: boolean; status?: string; error?: string }> {
-        return {
-            ok: this.status === 'connected',
-            status: this.status,
-        };
+        const hasProxy = !!this.proxyUrl;
+        const hasToken = !!process.env.FONNTE_TOKEN;
+
+        if (hasProxy || hasToken) {
+            return { ok: true, status: `Fonnte (${hasProxy ? 'via proxy' : 'direct'})` };
+        }
+        return { ok: false, error: 'WhatsApp not configured. Set FONNTE_TOKEN or WHATSAPP_PROXY_URL.' };
     }
 }

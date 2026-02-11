@@ -36,10 +36,7 @@ export const whatsappService = new WhatsAppService();
 const schedulerService = new SchedulerService(telegramService, discordService);
 schedulerService.init();
 
-// Auto-initialize WhatsApp client
-whatsappService.initClient().catch(err => {
-    console.error('[WhatsApp] Auto-init failed:', err);
-});
+// WhatsApp via Fonnte HTTP API - no init needed
 
 // Middleware
 app.use(cors({
