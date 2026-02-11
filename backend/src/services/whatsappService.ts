@@ -23,6 +23,7 @@ export class WhatsAppService {
     private socket: WASocket | null = null;
     private qrCode: string | null = null; // base64 data URL
     private status: WAStatus = 'disconnected';
+    private lastError: string | null = null;
     private authDir: string;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
@@ -49,6 +50,7 @@ export class WhatsAppService {
 
         try {
             this.status = 'connecting';
+            this.lastError = null;
             console.log('[WhatsApp] Initializing Baileys client...');
 
             const { state, saveCreds } = await useMultiFileAuthState(this.authDir);
@@ -92,6 +94,7 @@ export class WhatsAppService {
                     const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
 
                     console.log(`[WhatsApp] Connection closed. Status: ${statusCode}, Reconnect: ${shouldReconnect}`);
+                    this.lastError = `Connection closed (code: ${statusCode})`;
 
                     if (shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
                         this.reconnectAttempts++;
@@ -119,8 +122,9 @@ export class WhatsAppService {
             // Handle credential updates (save session)
             this.socket.ev.on('creds.update', saveCreds);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error('[WhatsApp] Init error:', error);
+            this.lastError = error?.message || String(error);
             this.status = 'disconnected';
         }
     }
@@ -128,10 +132,11 @@ export class WhatsAppService {
     /**
      * Get current connection status and QR code
      */
-    getConnectionInfo(): { status: WAStatus; qrCode: string | null } {
+    getConnectionInfo(): { status: WAStatus; qrCode: string | null; error: string | null } {
         return {
             status: this.status,
             qrCode: this.status === 'qr' ? this.qrCode : null,
+            error: this.lastError,
         };
     }
 

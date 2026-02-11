@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     const [waStatus, setWaStatus] = useState('disconnected');
     const [waQrCode, setWaQrCode] = useState(null);
     const [waConnecting, setWaConnecting] = useState(false);
+    const [waError, setWaError] = useState(null);
 
     const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
 
@@ -33,7 +34,8 @@ const AdminDashboard = () => {
             const data = await res.json();
             setWaStatus(data.status);
             setWaQrCode(data.qrCode);
-        } catch (e) { /* silent */ }
+            setWaError(data.error);
+        } catch (e) { setWaError(e.message); }
     };
 
     const handleWaConnect = async () => {
@@ -166,6 +168,12 @@ const AdminDashboard = () => {
                                 <div className="flex items-center justify-center py-4 border-t border-[#30363d]">
                                     <div className="animate-spin w-6 h-6 border-3 border-[#25D366] border-t-transparent rounded-full"></div>
                                     <span className="ml-3 text-[#9dabb9] text-sm">Connecting...</span>
+                                </div>
+                            )}
+
+                            {waError && waStatus === 'disconnected' && (
+                                <div className="mt-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                    <p className="text-red-400 text-xs font-mono break-all">Error: {waError}</p>
                                 </div>
                             )}
                         </div>
