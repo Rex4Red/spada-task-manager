@@ -135,8 +135,40 @@ export class AttendanceService {
         if (!this.page) return false;
 
         try {
-            // Use page.evaluate for XPath instead of deprecated $x
-            const attendanceLinks = await this.page.evaluate(() => {
+            // Wait for page content to load
+            await new Promise(r => setTimeout(r, 3000));
+
+            // Debug: log page URL and all activity links
+            const currentUrl = this.page.url();
+            console.log(`[Attendance] Current page URL: ${currentUrl}`);
+
+            const debugInfo = await this.page.evaluate(() => {
+                // Get all links on the page for debugging
+                const allLinks = Array.from(document.querySelectorAll('a'));
+                const attendanceKeywords = ['attendance', 'presensi', 'kehadiran', 'hadir'];
+                const matchingLinks: { text: string; href: string }[] = [];
+
+                for (const link of allLinks) {
+                    const text = (link.textContent || '').trim().toLowerCase();
+                    if (attendanceKeywords.some(kw => text.includes(kw))) {
+                        matchingLinks.push({ text: (link.textContent || '').trim(), href: link.href });
+                    }
+                }
+
+                // Also check for mod/attendance URLs
+                const modAttendanceLinks = allLinks
+                    .filter(a => a.href && a.href.includes('mod/attendance'))
+                    .map(a => ({ text: (a.textContent || '').trim(), href: a.href }));
+
+                return { matchingLinks, modAttendanceLinks, totalLinks: allLinks.length };
+            });
+
+            console.log(`[Attendance] Total links on page: ${debugInfo.totalLinks}`);
+            console.log(`[Attendance] Links matching attendance keywords: ${JSON.stringify(debugInfo.matchingLinks)}`);
+            console.log(`[Attendance] Links with mod/attendance URL: ${JSON.stringify(debugInfo.modAttendanceLinks)}`);
+
+            // Strategy 1: Find by activity class + text (original)
+            let attendanceLinks = await this.page.evaluate(() => {
                 const xpath = "//li[contains(@class,'activity')]//a[contains(., 'Attendance') or contains(., 'Presensi') or contains(., 'Kehadiran')]";
                 const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                 const links: string[] = [];
@@ -147,15 +179,40 @@ export class AttendanceService {
                 return links;
             });
 
+            // Strategy 2: Find by mod/attendance URL pattern (more reliable)
+            if (attendanceLinks.length === 0) {
+                console.log('[Attendance] Strategy 1 failed, trying URL pattern match...');
+                attendanceLinks = await this.page.evaluate(() => {
+                    const links = Array.from(document.querySelectorAll('a[href*="mod/attendance"]'));
+                    return links.map(a => (a as HTMLAnchorElement).href).filter(href => href.includes('view.php'));
+                });
+            }
+
+            // Strategy 3: Find any link with attendance keywords (broadest)
+            if (attendanceLinks.length === 0) {
+                console.log('[Attendance] Strategy 2 failed, trying broad text search...');
+                attendanceLinks = await this.page.evaluate(() => {
+                    const allLinks = Array.from(document.querySelectorAll('a'));
+                    const keywords = ['attendance', 'presensi', 'kehadiran'];
+                    return allLinks
+                        .filter(a => {
+                            const text = (a.textContent || '').toLowerCase();
+                            return keywords.some(kw => text.includes(kw)) && a.href;
+                        })
+                        .map(a => a.href);
+                });
+            }
+
             if (attendanceLinks.length > 0) {
-                // Navigate to last attendance link
+                // Navigate to last attendance link (most recent)
                 const targetUrl = attendanceLinks[attendanceLinks.length - 1];
-                console.log('[Attendance] Found attendance link, navigating...');
+                console.log(`[Attendance] Found ${attendanceLinks.length} attendance link(s), navigating to: ${targetUrl}`);
                 await this.page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
                 console.log('[Attendance] Attendance page loaded!');
                 return true;
             }
 
+            console.log('[Attendance] No attendance links found on course page');
             return false;
         } catch (error) {
             console.error('[Attendance] Error finding attendance link:', error);
