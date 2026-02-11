@@ -454,16 +454,20 @@ export class AttendanceService {
 
 _SPADA Task Manager_`;
 
-        // Upload screenshot to Telegra.ph and include link in message
+        // Build screenshot URL from HF Space public host
         let screenshotUrl = '';
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
-            try {
-                const imageBuffer = fs.readFileSync(result.screenshotPath);
-                screenshotUrl = await this.uploadToTelegraph(imageBuffer);
-                console.log('[WhatsApp] Screenshot uploaded:', screenshotUrl);
-            } catch (e) {
-                console.error('[WhatsApp] Screenshot upload failed:', e);
+            const filename = path.basename(result.screenshotPath);
+            // HF Spaces sets SPACE_HOST env var (e.g. "username-spacename.hf.space")
+            const spaceHost = process.env.SPACE_HOST;
+            if (spaceHost) {
+                screenshotUrl = `https://${spaceHost}/screenshots/${filename}`;
+            } else {
+                // Local dev fallback
+                const port = process.env.PORT || 7860;
+                screenshotUrl = `http://localhost:${port}/screenshots/${filename}`;
             }
+            console.log('[WhatsApp] Screenshot URL:', screenshotUrl);
         }
 
         // Build message with screenshot link if available
@@ -475,27 +479,6 @@ _SPADA Task Manager_`;
         if (!textResult.success) {
             console.error('[WhatsApp] Notification failed:', textResult.error);
         }
-    }
-
-    /**
-     * Upload image to Telegra.ph (free, no auth required)
-     * Uses Node 18 native FormData + Blob (compatible with native fetch)
-     */
-    private async uploadToTelegraph(imageBuffer: Buffer): Promise<string> {
-        const blob = new Blob([new Uint8Array(imageBuffer)], { type: 'image/png' });
-        const formData = new FormData();
-        formData.append('file', blob, 'screenshot.png');
-
-        const response = await fetch('https://telegra.ph/upload', {
-            method: 'POST',
-            body: formData,
-        });
-
-        const data = await response.json() as any;
-        if (data && data[0] && data[0].src) {
-            return `https://telegra.ph${data[0].src}`;
-        }
-        throw new Error('Telegraph upload failed: ' + JSON.stringify(data));
     }
 }
 

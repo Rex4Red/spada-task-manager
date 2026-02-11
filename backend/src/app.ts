@@ -9,6 +9,7 @@ if (dns.setDefaultResultOrder) {
 }
 
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -46,6 +47,9 @@ app.use(cors({
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Serve screenshots as static files (for WhatsApp notification links)
+app.use('/screenshots', express.static(path.join(process.cwd(), 'screenshots')));
 
 // Routes
 app.use('/api/auth', authRoutes);
