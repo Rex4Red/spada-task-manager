@@ -283,9 +283,19 @@ export class ScraperService {
      */
     async close() {
         if (this.browser) {
-            await this.browser.close();
-            this.browser = null;
-            this.page = null;
+            try {
+                const browserProcess = this.browser.process();
+                await this.browser.close().catch(() => { });
+                // Force kill if still running
+                if (browserProcess && !browserProcess.killed) {
+                    browserProcess.kill('SIGKILL');
+                }
+            } catch (e) {
+                console.error('[Scraper] Error closing browser:', e);
+            } finally {
+                this.browser = null;
+                this.page = null;
+            }
         }
     }
 }

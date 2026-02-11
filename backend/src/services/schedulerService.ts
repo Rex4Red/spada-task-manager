@@ -13,6 +13,7 @@ export class SchedulerService {
     private telegramService: TelegramService;
     private discordService: DiscordService;
     private whatsappService: WhatsAppService;
+    private isSyncing = false;
 
     constructor(telegramService: TelegramService, discordService?: DiscordService, whatsappService?: WhatsAppService) {
         this.telegramService = telegramService;
@@ -29,15 +30,17 @@ export class SchedulerService {
             await this.checkDeadlines();
         });
 
-        // 2. Auto-Sync: Every 10 minutes
-        cron.schedule('*/10 * * * *', async () => {
+        // 2. Auto-Sync: Every 30 minutes (reduced from 10 to prevent resource exhaustion)
+        cron.schedule('*/30 * * * *', async () => {
             console.log('Running scheduled auto-sync...');
             await this.syncAllUsers();
         });
 
         // 3. Attendance Check: Every minute
         cron.schedule('* * * * *', async () => {
-            await this.checkAttendanceSchedules();
+            if (!this.isSyncing) {
+                await this.checkAttendanceSchedules();
+            }
         });
 
         // 4. WhatsApp Bot Keep-Alive: Every 5 minutes
@@ -45,7 +48,7 @@ export class SchedulerService {
             await this.pingWhatsAppBot();
         });
 
-        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min), WhatsApp Keep-Alive (5 mins)');
+        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (30 mins), Attendance (every min), WhatsApp Keep-Alive (5 mins)');
     }
 
     /**
@@ -252,7 +255,16 @@ export class SchedulerService {
         return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     }
 
+
+
     private async syncAllUsers() {
+        // Prevent overlapping syncs
+        if (this.isSyncing) {
+            console.log('[Auto-Sync] Sync already in progress, skipping...');
+            return;
+        }
+
+        this.isSyncing = true;
         try {
             // Find users with SPADA credentials
             const users = await prisma.user.findMany({
@@ -275,7 +287,7 @@ export class SchedulerService {
                     const loggedIn = await scraper.login(user.spadaUsername, decryptedPassword);
 
                     if (loggedIn) {
-                        // FIX: Only sync courses that the user has added to the DB
+                        // Only sync courses that the user has added to the DB
                         const savedCourses = await prisma.course.findMany({
                             where: { userId: user.id }
                         });
@@ -286,7 +298,7 @@ export class SchedulerService {
 
                         // Iterate saved courses and scrape assignments
                         for (const course of savedCourses) {
-                            // Basic throttle
+                            // Throttle between courses
                             await new Promise(r => setTimeout(r, 2000));
                             console.log(`[Auto-Sync] Scraping assignments for course: ${course.name} (${course.sourceId})`);
 
@@ -312,11 +324,16 @@ export class SchedulerService {
                 } catch (error) {
                     console.error(`[Auto-Sync] Error syncing user ${user.email}:`, error);
                 } finally {
+                    // Ensure browser is closed before moving to next user
                     await scraper.close();
+                    // Wait 5 seconds between users to let processes fully terminate
+                    await new Promise(r => setTimeout(r, 5000));
                 }
             }
         } catch (error) {
             console.error('[Auto-Sync] Global error in syncAllUsers:', error);
+        } finally {
+            this.isSyncing = false;
         }
     }
 
