@@ -454,22 +454,32 @@ export class AttendanceService {
 
 _SPADA Task Manager_`;
 
-        // Send with screenshot if available
+        // Try sending with screenshot, fallback to text-only
+        let sent = false;
+
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
             try {
                 const imageBuffer = fs.readFileSync(result.screenshotPath);
                 const base64Image = imageBuffer.toString('base64');
                 const mimetype = result.screenshotPath.endsWith('.png') ? 'image/png' : 'image/jpeg';
 
-                await whatsappService.sendImage(phoneNumber, base64Image, caption, mimetype);
+                const imgResult = await whatsappService.sendImage(phoneNumber, base64Image, caption, mimetype);
+                if (imgResult.success) {
+                    sent = true;
+                } else {
+                    console.log('[WhatsApp] Image send failed, falling back to text:', imgResult.error);
+                }
             } catch (e) {
                 console.error('Error reading screenshot for WhatsApp:', e);
-                // Fallback to text message
-                await whatsappService.sendMessage(phoneNumber, caption);
             }
-        } else {
-            // Send text only
-            await whatsappService.sendMessage(phoneNumber, caption);
+        }
+
+        // Fallback: send text-only message
+        if (!sent) {
+            const textResult = await whatsappService.sendMessage(phoneNumber, caption);
+            if (!textResult.success) {
+                console.error('[WhatsApp] Text notification also failed:', textResult.error);
+            }
         }
     }
 }
