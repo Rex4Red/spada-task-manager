@@ -1,6 +1,6 @@
 // Vercel Serverless Function - WhatsApp Proxy via Fonnte.com API
 // Forwards requests from HF backend to Fonnte API
-// Same pattern as telegram-proxy.js and discord-proxy.js
+// Supports text messages and image uploads via multipart/form-data
 
 export default async function handler(req, res) {
     // Set CORS headers
@@ -26,7 +26,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ ok: false, error: 'Unauthorized' });
     }
 
-    const { target, message, type, url } = req.body;
+    const { target, message, imageBase64, filename } = req.body;
 
     if (!target) {
         return res.status(400).json({ ok: false, error: 'Missing "target"' });
@@ -40,26 +40,48 @@ export default async function handler(req, res) {
     }
 
     try {
-        // Build Fonnte API payload
-        const payload = { target, message: message || '' };
-
-        // Add media URL if sending image
-        if (type === 'image' && url) {
-            payload.url = url;
-        }
-
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-        const response = await fetch('https://api.fonnte.com/send', {
-            method: 'POST',
-            headers: {
-                'Authorization': fonnteToken,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal,
-        });
+        let response;
+
+        if (imageBase64) {
+            // Send image via multipart/form-data (Fonnte requires this for file uploads)
+            const boundary = '----FonnteFormBoundary' + Date.now();
+            const imageBuffer = Buffer.from(imageBase64, 'base64');
+            const fname = filename || 'screenshot.png';
+
+            // Build multipart body
+            const parts = [];
+            parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="target"\r\n\r\n${target}`);
+            parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="message"\r\n\r\n${message || ''}`);
+            parts.push(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fname}"\r\nContent-Type: image/png\r\n\r\n`);
+
+            const beforeFile = Buffer.from(parts.join('\r\n') + '\r\n');
+            const afterFile = Buffer.from(`\r\n--${boundary}--\r\n`);
+            const body = Buffer.concat([beforeFile, imageBuffer, afterFile]);
+
+            response = await fetch('https://api.fonnte.com/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': fonnteToken,
+                    'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                },
+                body: body,
+                signal: controller.signal,
+            });
+        } else {
+            // Send text-only message via JSON
+            response = await fetch('https://api.fonnte.com/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': fonnteToken,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ target, message: message || '' }),
+                signal: controller.signal,
+            });
+        }
 
         clearTimeout(timeoutId);
 

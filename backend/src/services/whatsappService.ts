@@ -72,35 +72,30 @@ export class WhatsAppService {
             return { success: false, error: 'Phone number not provided' };
         }
 
+        const payload = {
+            target: this.formatPhone(phoneNumber),
+            message: caption || '',
+            imageBase64: base64Image,
+            filename: 'screenshot.png',
+        };
+
         if (this.proxyUrl) {
             try {
                 console.log('[WhatsApp] Sending image via Vercel proxy...');
-                const result = await this.sendViaProxy({
-                    target: this.formatPhone(phoneNumber),
-                    message: caption || '',
-                    type: 'image',
-                    url: `data:image/png;base64,${base64Image}`,
-                });
+                const result = await this.sendViaProxy(payload);
                 if (result.success) {
                     console.log('✅ WhatsApp image sent via Vercel proxy');
                     return result;
                 }
+                console.log('[WhatsApp] Image proxy failed:', result.error);
             } catch (e: any) {
                 console.log('[WhatsApp] Image proxy exception:', e.message);
             }
         }
 
-        // Fallback direct
-        try {
-            return await this.sendDirect({
-                target: this.formatPhone(phoneNumber),
-                message: caption || '',
-                type: 'image',
-                url: `data:image/png;base64,${base64Image}`,
-            });
-        } catch (e: any) {
-            return { success: false, error: `All methods failed: ${e.message}` };
-        }
+        // Fallback: send text only (direct Fonnte can't do multipart easily)
+        console.log('[WhatsApp] Falling back to text-only message');
+        return await this.sendMessage(phoneNumber, caption);
     }
 
     /**
