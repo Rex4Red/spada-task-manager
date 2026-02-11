@@ -19,6 +19,7 @@ import taskRoutes from './routes/taskRoutes';
 import settingsRoutes from './routes/settingsRoutes';
 import attendanceRoutes from './routes/attendanceRoutes';
 import adminRoutes from './routes/adminRoutes';
+import whatsappRoutes from './routes/whatsappRoutes';
 
 // Services
 import { TelegramService } from './services/telegramService';
@@ -34,6 +35,11 @@ export const discordService = new DiscordService();
 export const whatsappService = new WhatsAppService();
 const schedulerService = new SchedulerService(telegramService, discordService);
 schedulerService.init();
+
+// Auto-initialize WhatsApp client
+whatsappService.initClient().catch(err => {
+    console.error('[WhatsApp] Auto-init failed:', err);
+});
 
 // Middleware
 app.use(cors({
@@ -52,6 +58,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/whatsapp', whatsappRoutes);
 
 // Base route
 app.get('/', (req, res) => {
