@@ -43,36 +43,19 @@ export class SchedulerService {
             }
         });
 
-        // 4. WhatsApp Bot Keep-Alive: Every 5 minutes
-        cron.schedule('*/5 * * * *', async () => {
-            await this.pingWhatsAppBot();
-        });
-
-        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (30 mins), Attendance (every min), WhatsApp Keep-Alive (5 mins)');
+        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (30 mins), Attendance (every min)');
     }
 
     /**
-     * Ping WhatsApp bot to keep it alive on Koyeb free tier
+     * Kill zombie Chrome processes to prevent resource exhaustion
      */
-    private async pingWhatsAppBot() {
-        const botUrl = process.env.WHATSAPP_BOT_URL || 'https://very-ardith-bot-wa-absen-spada-69b791b2.koyeb.app';
-
+    private async killZombieChrome() {
         try {
-            const response = await fetch(`${botUrl}/status`, {
-                method: 'GET',
-                headers: {
-                    'X-API-Key': process.env.WHATSAPP_API_KEY || '123230161'
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log(`[WhatsApp Keep-Alive] Bot status: ${data.status || 'connected'}`);
-            } else {
-                console.log(`[WhatsApp Keep-Alive] Ping response: ${response.status}`);
-            }
-        } catch (error: any) {
-            console.log(`[WhatsApp Keep-Alive] Ping failed: ${error.message}`);
+            const { execSync } = require('child_process');
+            execSync('pkill -9 -f chrome 2>/dev/null || true', { timeout: 5000 });
+            await new Promise(r => setTimeout(r, 2000));
+        } catch (e) {
+            // Ignore - no Chrome processes to kill
         }
     }
 
@@ -266,6 +249,9 @@ export class SchedulerService {
 
         this.isSyncing = true;
         try {
+            // Kill any zombie Chrome processes before starting
+            await this.killZombieChrome();
+
             // Find users with SPADA credentials
             const users = await prisma.user.findMany({
                 where: {
