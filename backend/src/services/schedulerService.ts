@@ -31,8 +31,8 @@ export class SchedulerService {
             await this.checkDeadlines();
         });
 
-        // 2. Auto-Sync: Every 30 minutes (reduced from 10 to prevent resource exhaustion)
-        cron.schedule('*/30 * * * *', async () => {
+        // 2. Auto-Sync: Every 10 minutes
+        cron.schedule('*/10 * * * *', async () => {
             console.log('Running scheduled auto-sync...');
             await this.syncAllUsers();
         });
@@ -44,7 +44,7 @@ export class SchedulerService {
             }
         });
 
-        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (30 mins), Attendance (every min)');
+        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min)');
     }
 
     /**
