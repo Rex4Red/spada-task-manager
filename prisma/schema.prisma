@@ -1,0 +1,161 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                  Int       @id @default(autoincrement())
+  email               String    @unique
+  password            String
+  name                String
+  spadaUsername       String?
+  spadaPassword       String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  courses             Course[]
+  tasks               Task[]
+  telegramConfig      TelegramConfig?
+  discordConfig       DiscordConfig?
+  whatsappConfig      WhatsAppConfig?
+  notificationSettings NotificationSettings?
+}
+
+model Course {
+  id          Int      @id @default(autoincrement())
+  sourceId    String
+  name        String
+  url         String
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+  attendanceSchedule  AttendanceSchedule?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lastSynced  DateTime?
+  isDeleted   Boolean   @default(false)
+
+  @@unique([sourceId, userId])
+}
+
+model Task {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  status        String    @default("PENDING") // PENDING, COMPLETED, OVERDUE
+  deadline      DateTime?
+  url           String?
+  courseId      Int
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  notifications Notification[]
+  
+  isScraped     Boolean   @default(true)
+  isDeleted     Boolean   @default(false)
+  timeRemaining String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([courseId, title])
+}
+
+model TelegramConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  botToken        String
+  chatId          String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DiscordConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  webhookUrl      String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WhatsAppConfig {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @unique
+  phoneNumber     String    // Format: 6281234567890 (with country code, no +)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationSettings {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @unique
+  thresholdDays     Int       @default(3)
+  quietHoursStart   Int?
+  quietHoursEnd     Int?
+  emailNotification Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id            Int       @id @default(autoincrement())
+  taskId        Int
+  sentAt        DateTime  @default(now())
+  message       String
+  type          String
+  isDelivered   Boolean   @default(false)
+  
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// Auto Attendance Models
+model AttendanceSchedule {
+  id                    Int       @id @default(autoincrement())
+  courseId              Int       @unique
+  scheduleType          String    @default("SIMPLE") // SIMPLE or CRON
+  dayOfWeek             Int?      // 0-6 (Sun-Sat) for SIMPLE mode
+  timeOfDay             String?   // "HH:mm" format for SIMPLE mode
+  cronExpression        String?   // For advanced users
+  maxRetries            Int       @default(6)
+  retryIntervalMinutes  Int       @default(5)
+  isActive              Boolean   @default(true)
+  useSeparateTelegram   Boolean   @default(false)
+  customBotToken        String?   // Only bot token needed, Chat ID from user's TelegramConfig
+  lastRunAt             DateTime?
+  nextRunAt             DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  course                Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  logs                  AttendanceLog[]
+}
+
+model AttendanceLog {
+  id            Int       @id @default(autoincrement())
+  scheduleId    Int
+  attemptedAt   DateTime  @default(now())
+  attemptNumber Int       // 1-6 (which retry attempt)
+  status        String    // SUCCESS, FAILED, NOT_AVAILABLE, TIMEOUT, ERROR
+  message       String?
+  screenshotUrl String?   // Path to screenshot file
+  
+  schedule      AttendanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+}
