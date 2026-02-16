@@ -14,6 +14,7 @@ export class SchedulerService {
     private discordService: DiscordService;
     private whatsappService: WhatsAppService;
     private isSyncing = false;
+    private lastSyncIndex = 0;
 
     constructor(telegramService: TelegramService, discordService?: DiscordService, whatsappService?: WhatsAppService) {
         this.telegramService = telegramService;
@@ -260,10 +261,32 @@ export class SchedulerService {
                 }
             });
 
-            console.log(`[Auto-Sync] Found ${users.length} users enabled for auto-sync.`);
+            if (users.length === 0) return;
 
-            for (const user of users) {
+            // Limit to max 3 users per sync cycle to prevent resource exhaustion
+            const MAX_USERS_PER_CYCLE = 3;
+            const startIdx = this.lastSyncIndex % users.length;
+            const usersToSync = [];
+            for (let i = 0; i < Math.min(MAX_USERS_PER_CYCLE, users.length); i++) {
+                usersToSync.push(users[(startIdx + i) % users.length]);
+            }
+            this.lastSyncIndex = (startIdx + usersToSync.length) % users.length;
+
+            console.log(`[Auto-Sync] Syncing ${usersToSync.length}/${users.length} users (batch starting at index ${startIdx})`);
+
+            let consecutiveFailures = 0;
+
+            for (const user of usersToSync) {
                 if (!user.spadaUsername || !user.spadaPassword) continue;
+
+                // Fail-fast: if 2 consecutive users fail to launch Chrome, stop
+                if (consecutiveFailures >= 2) {
+                    console.log('[Auto-Sync] Too many Chrome launch failures, stopping this cycle');
+                    break;
+                }
+
+                // Kill Chrome before each user to ensure clean slate
+                await this.killZombieChrome();
 
                 console.log(`[Auto-Sync] Syncing data for user: ${user.email}`);
                 const scraper = new ScraperService();
@@ -273,6 +296,8 @@ export class SchedulerService {
                     const loggedIn = await scraper.login(user.spadaUsername, decryptedPassword);
 
                     if (loggedIn) {
+                        consecutiveFailures = 0; // Reset on success
+
                         // Only sync courses that the user has added to the DB
                         const savedCourses = await prisma.course.findMany({
                             where: { userId: user.id }
@@ -306,19 +331,23 @@ export class SchedulerService {
                         console.log(`[Auto-Sync] Sync complete for user: ${user.email}`);
                     } else {
                         console.error(`[Auto-Sync] Login failed for user: ${user.email}`);
+                        consecutiveFailures++;
                     }
-                } catch (error) {
-                    console.error(`[Auto-Sync] Error syncing user ${user.email}:`, error);
+                } catch (error: any) {
+                    console.error(`[Auto-Sync] Error syncing user ${user.email}:`, error.message || error);
+                    consecutiveFailures++;
                 } finally {
                     // Ensure browser is closed before moving to next user
                     await scraper.close();
-                    // Wait 5 seconds between users to let processes fully terminate
-                    await new Promise(r => setTimeout(r, 5000));
+                    // Wait 10 seconds between users to let processes fully terminate
+                    await new Promise(r => setTimeout(r, 10000));
                 }
             }
         } catch (error) {
             console.error('[Auto-Sync] Global error in syncAllUsers:', error);
         } finally {
+            // Final cleanup
+            await this.killZombieChrome();
             this.isSyncing = false;
         }
     }
