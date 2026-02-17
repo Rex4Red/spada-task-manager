@@ -70,9 +70,19 @@ export class AttendanceService {
      */
     async close() {
         if (this.browser) {
-            await this.browser.close();
-            this.browser = null;
-            this.page = null;
+            try {
+                const browserProcess = this.browser.process();
+                await this.browser.close().catch(() => { });
+                // Force kill if still running
+                if (browserProcess && !browserProcess.killed) {
+                    browserProcess.kill('SIGKILL');
+                }
+            } catch (e) {
+                console.error('[Attendance] Error closing browser:', e);
+            } finally {
+                this.browser = null;
+                this.page = null;
+            }
         }
     }
 
@@ -271,6 +281,17 @@ export class AttendanceService {
     }
 
     /**
+     * Kill zombie Chrome processes before starting
+     */
+    private async killZombieChrome() {
+        try {
+            const { execSync } = require('child_process');
+            execSync('pkill -9 -f chrome 2>/dev/null || true', { timeout: 5000 });
+            await new Promise(r => setTimeout(r, 2000));
+        } catch (e) { /* ignore */ }
+    }
+
+    /**
      * Main function: Run attendance for a course
      */
     async runAttendance(
@@ -279,12 +300,25 @@ export class AttendanceService {
         password: string
     ): Promise<AttendanceResult> {
         try {
+            // Kill zombie Chrome before starting
+            await this.killZombieChrome();
             await this.init();
 
-            // Step 1: Login
-            const loggedIn = await this.login(username, password);
+            // Step 1: Login with retry (frame detachment can happen under resource pressure)
+            let loggedIn = false;
+            for (let attempt = 1; attempt <= 2; attempt++) {
+                loggedIn = await this.login(username, password);
+                if (loggedIn) break;
+                if (attempt < 2) {
+                    console.log(`[Attendance] Login attempt ${attempt} failed, retrying...`);
+                    await this.close();
+                    await this.killZombieChrome();
+                    await this.init();
+                }
+            }
             if (!loggedIn) {
-                const screenshot = await this.takeScreenshot('login_failed');
+                let screenshot: string | undefined;
+                try { screenshot = await this.takeScreenshot('login_failed'); } catch { }
                 return {
                     success: false,
                     status: 'ERROR',
