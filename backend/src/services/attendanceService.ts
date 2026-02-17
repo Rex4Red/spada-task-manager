@@ -280,16 +280,7 @@ export class AttendanceService {
         }
     }
 
-    /**
-     * Kill zombie Chrome processes before starting
-     */
-    private async killZombieChrome() {
-        try {
-            const { execSync } = require('child_process');
-            execSync('pkill -9 -f chrome 2>/dev/null || true', { timeout: 5000 });
-            await new Promise(r => setTimeout(r, 2000));
-        } catch (e) { /* ignore */ }
-    }
+
 
     /**
      * Main function: Run attendance for a course
@@ -300,8 +291,6 @@ export class AttendanceService {
         password: string
     ): Promise<AttendanceResult> {
         try {
-            // Kill zombie Chrome before starting
-            await this.killZombieChrome();
             await this.init();
 
             // Step 1: Login with retry (frame detachment can happen under resource pressure)
@@ -312,7 +301,7 @@ export class AttendanceService {
                 if (attempt < 2) {
                     console.log(`[Attendance] Login attempt ${attempt} failed, retrying...`);
                     await this.close();
-                    await this.killZombieChrome();
+                    await new Promise(r => setTimeout(r, 3000));
                     await this.init();
                 }
             }

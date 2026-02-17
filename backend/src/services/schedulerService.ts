@@ -14,6 +14,7 @@ export class SchedulerService {
     private discordService: DiscordService;
     private whatsappService: WhatsAppService;
     private isSyncing = false;
+    private isCheckingAttendance = false;
     private lastSyncIndex = 0;
 
     constructor(telegramService: TelegramService, discordService?: DiscordService, whatsappService?: WhatsAppService) {
@@ -39,7 +40,7 @@ export class SchedulerService {
 
         // 3. Attendance Check: Every minute
         cron.schedule('* * * * *', async () => {
-            if (!this.isSyncing) {
+            if (!this.isSyncing && !this.isCheckingAttendance) {
                 await this.checkAttendanceSchedules();
             }
         });
@@ -64,6 +65,7 @@ export class SchedulerService {
      * Check and run attendance schedules
      */
     private async checkAttendanceSchedules() {
+        this.isCheckingAttendance = true;
         try {
             const now = new Date();
 
@@ -92,6 +94,9 @@ export class SchedulerService {
 
             console.log(`[Attendance Scheduler] Found ${dueSchedules.length} due schedules`);
 
+            // Kill zombie Chrome once before starting all schedules
+            await this.killZombieChrome();
+
             for (const schedule of dueSchedules) {
                 const user = schedule.course.user;
                 if (!user.spadaUsername || !user.spadaPassword) {
@@ -101,9 +106,15 @@ export class SchedulerService {
 
                 // Run attendance attempt
                 await this.runAttendanceWithRetry(schedule, user, 1);
+
+                // Wait 10s between schedules to let Chrome fully die
+                await new Promise(r => setTimeout(r, 10000));
             }
         } catch (error) {
             console.error('[Attendance Scheduler] Error:', error);
+        } finally {
+            await this.killZombieChrome();
+            this.isCheckingAttendance = false;
         }
     }
 
