@@ -18,7 +18,6 @@ export class ScraperService {
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--single-process',
                     '--no-zygote',
                     '--disable-dbus',
                     '--disable-software-rasterizer',
