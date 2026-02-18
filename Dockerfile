@@ -8,8 +8,12 @@ RUN apt-get update \
   && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
   && apt-get update \
   && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+  dbus dbus-x11 libnss3 libatk-bridge2.0-0 libgtk-3-0 libasound2 \
   --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
+
+# Setup dbus
+RUN mkdir -p /run/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
 
 # Config env to use installed chrome
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
