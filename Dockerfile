@@ -16,6 +16,20 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
 WORKDIR /app
 
+# ========== Build Backend ==========
+COPY package*.json ./
+RUN npm install
+
+COPY src/ ./src/
+COPY prisma/ ./prisma/
+COPY tsconfig.json ./
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Build TypeScript
+RUN npm run build
+
 # ========== Build Frontend ==========
 COPY frontend/package*.json ./frontend/
 RUN cd frontend && npm install
@@ -26,18 +40,6 @@ COPY frontend/ ./frontend/
 ARG VITE_API_BASE_URL=
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN cd frontend && npm run build
-
-# ========== Build Backend ==========
-COPY package*.json ./
-RUN npm install
-
-COPY . .
-
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Build TypeScript
-RUN npm run build
 
 # Move frontend dist to where backend can serve it
 RUN cp -r frontend/dist ./dist/public
