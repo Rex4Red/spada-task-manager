@@ -1,0 +1,9 @@
+{
+    "redirects": [
+        {
+            "source": "/(.*)",
+            "destination": "https://spada-task-manager.my.id/$1",
+            "permanent": true
+        }
+    ]
+}
