@@ -61,15 +61,16 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 
+import fs from 'fs';
+
 // Serve frontend static files (built Vite app)
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-// SPA fallback - any non-API route serves index.html
-app.get('*', (req, res) => {
+// SPA fallback - any non-API route serves index.html (Express 5 syntax)
+app.get('{*path}', (req, res) => {
     const indexPath = path.join(publicPath, 'index.html');
-    // Only serve index.html if it exists (production build)
-    if (require('fs').existsSync(indexPath)) {
+    if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
     } else {
         res.send('SPADA Task Manager API is running');
