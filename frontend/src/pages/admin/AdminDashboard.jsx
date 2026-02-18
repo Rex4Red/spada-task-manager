@@ -11,7 +11,7 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [waStatus, setWaStatus] = useState(null);
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:7860/api';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
     useEffect(() => {
         fetchData();
