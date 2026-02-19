@@ -75,25 +75,24 @@ export class WhatsAppService {
         const payload = {
             target: this.formatPhone(phoneNumber),
             message: caption || '',
-            imageBase64: base64Image,
+            file: base64Image, // Fonnte uses 'file' field for base64 image
             filename: 'screenshot.png',
         };
 
-        if (this.proxyUrl) {
-            try {
-                console.log('[WhatsApp] Sending image via Vercel proxy...');
-                const result = await this.sendViaProxy(payload);
-                if (result.success) {
-                    console.log('✅ WhatsApp image sent via Vercel proxy');
-                    return result;
-                }
-                console.log('[WhatsApp] Image proxy failed:', result.error);
-            } catch (e: any) {
-                console.log('[WhatsApp] Image proxy exception:', e.message);
+        // Try direct Fonnte API (supports image natively)
+        try {
+            console.log('[WhatsApp] Sending image via direct Fonnte API...');
+            const result = await this.sendDirect(payload);
+            if (result.success) {
+                console.log('✅ WhatsApp image sent via Fonnte API');
+                return result;
             }
+            console.log('[WhatsApp] Direct image failed:', result.error);
+        } catch (e: any) {
+            console.log('[WhatsApp] Direct image exception:', e.message);
         }
 
-        // Fallback: send text only (direct Fonnte can't do multipart easily)
+        // Fallback: send text only
         console.log('[WhatsApp] Falling back to text-only message');
         return await this.sendMessage(phoneNumber, caption);
     }
