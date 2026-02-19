@@ -2,6 +2,68 @@ import prisma from '../config/database';
 import { telegramService, discordService, whatsappService } from '../app';
 import { DiscordColors } from './discordService';
 
+/**
+ * Parse SPADA/Moodle date strings like:
+ * - "Wednesday, 26 February 2025, 11:59 PM"
+ * - "Rabu, 26 Februari 2025, 23:59"
+ * - "26 February 2025, 11:59 PM"
+ * - "2025-02-26"
+ */
+function parseSpadaDate(dateStr: string | null | undefined): Date | null {
+    if (!dateStr || dateStr === 'Unknown' || dateStr === '-' || dateStr === 'No date') return null;
+
+    // Indonesian month names → English
+    const idMonths: Record<string, string> = {
+        'januari': 'January', 'februari': 'February', 'maret': 'March',
+        'april': 'April', 'mei': 'May', 'juni': 'June',
+        'juli': 'July', 'agustus': 'August', 'september': 'September',
+        'oktober': 'October', 'november': 'November', 'desember': 'December'
+    };
+
+    let cleaned = dateStr.trim();
+
+    // Replace Indonesian month names with English
+    for (const [id, en] of Object.entries(idMonths)) {
+        cleaned = cleaned.replace(new RegExp(id, 'gi'), en);
+    }
+
+    // Strip day-of-week prefix (e.g., "Wednesday, " or "Rabu, ")
+    // Matches any word followed by comma and space at the start
+    cleaned = cleaned.replace(/^[A-Za-z]+,\s*/, '');
+
+    // Try direct parse first
+    let parsed = new Date(cleaned);
+    if (!isNaN(parsed.getTime())) {
+        return parsed;
+    }
+
+    // Try removing the last comma before time: "26 February 2025, 11:59 PM" → "26 February 2025 11:59 PM"
+    const noComma = cleaned.replace(/,\s*(\d{1,2}[:\.]\d{2})/, ' $1');
+    parsed = new Date(noComma);
+    if (!isNaN(parsed.getTime())) {
+        return parsed;
+    }
+
+    // Try regex: "DD Month YYYY, HH:MM" or "DD Month YYYY, HH:MM AM/PM"
+    const match = cleaned.match(/(\d{1,2})\s+(\w+)\s+(\d{4}),?\s*(\d{1,2})[:\.](\d{2})\s*(AM|PM)?/i);
+    if (match) {
+        const [, day, month, year, hours, minutes, ampm] = match;
+        let h = parseInt(hours);
+        if (ampm) {
+            if (ampm.toUpperCase() === 'PM' && h < 12) h += 12;
+            if (ampm.toUpperCase() === 'AM' && h === 12) h = 0;
+        }
+        const dateString = `${month} ${day}, ${year} ${h.toString().padStart(2, '0')}:${minutes}:00`;
+        parsed = new Date(dateString);
+        if (!isNaN(parsed.getTime())) {
+            return parsed;
+        }
+    }
+
+    console.warn(`[DateParser] Could not parse SPADA date: "${dateStr}"`);
+    return null;
+}
+
 export const saveCoursesToDb = async (userId: number, courses: any[]) => {
     // console.log(`Saving ${courses.length} courses to database for user ${userId}...`);
 
@@ -46,13 +108,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
         if (course.assignments && course.assignments.length > 0) {
             // console.log(`Saving ${course.assignments.length} assignments for course ${course.name}...`);
             for (const assignment of course.assignments) {
-                let dueDateObj = null;
-                if (assignment.dueDate && assignment.dueDate !== 'Unknown') {
-                    const parsedDate = new Date(assignment.dueDate);
-                    if (!isNaN(parsedDate.getTime())) {
-                        dueDateObj = parsedDate;
-                    }
-                }
+                let dueDateObj = parseSpadaDate(assignment.dueDate);
 
                 // Check if task already exists to determine if it's NEW
                 const existingTask = await prisma.task.findUnique({
