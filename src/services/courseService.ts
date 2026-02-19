@@ -117,6 +117,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
             // console.log(`Saving ${course.assignments.length} assignments for course ${course.name}...`);
             for (const assignment of course.assignments) {
                 let dueDateObj = parseSpadaDate(assignment.dueDate);
+                console.log(`[CourseService] Task: "${assignment.name}" | Status: "${assignment.status}" | Due: "${assignment.dueDate}" | Parsed: ${dueDateObj}`);
 
                 // Check if task already exists to determine if it's NEW
                 const existingTask = await prisma.task.findUnique({
@@ -136,7 +137,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                         }
                     },
                     update: {
-                        status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
+                        status: assignment.status?.toLowerCase().includes('submitted') ? 'COMPLETED' : 'PENDING',
                         deadline: dueDateObj,
                         url: assignment.url,
                         description: `Type: ${assignment.status}`,
@@ -145,7 +146,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     create: {
                         title: assignment.name,
                         description: `Type: ${assignment.status}`,
-                        status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
+                        status: assignment.status?.toLowerCase().includes('submitted') ? 'COMPLETED' : 'PENDING',
                         deadline: dueDateObj,
                         url: assignment.url,
                         timeRemaining: assignment.timeRemaining,
