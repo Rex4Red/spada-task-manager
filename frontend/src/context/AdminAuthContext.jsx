@@ -7,7 +7,7 @@ export const AdminAuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('adminToken'));
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+    const API_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
     // Verify token on mount
     useEffect(() => {
