@@ -208,6 +208,89 @@ _SPADA Task Manager_`;
                         });
                     }
                 }
+
+                // Send Reminder if existing task is still PENDING (not submitted) and has a deadline
+                if (existingTask && !assignment.status?.toLowerCase().includes('submitted') && dueDateObj) {
+                    // Throttle: only send once per 24 hours per task
+                    const lastReminder = await prisma.notification.findFirst({
+                        where: {
+                            taskId: savedTask.id,
+                            type: 'pending_reminder',
+                            sentAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                        }
+                    });
+
+                    if (!lastReminder) {
+                        const deadlineStr = dueDateObj.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+                        const now = new Date();
+                        const hoursLeft = Math.round((dueDateObj.getTime() - now.getTime()) / (1000 * 60 * 60));
+                        const timeLeftStr = hoursLeft > 24
+                            ? `${Math.round(hoursLeft / 24)} hari lagi`
+                            : `${hoursLeft} jam lagi`;
+
+                        console.log(`[CourseService] Pending task reminder: ${assignment.name} (${timeLeftStr})`);
+
+                        // Telegram Reminder
+                        if (telegramConfig && telegramConfig.isActive && telegramConfig.chatId) {
+                            const message = `
+⚠️ *Tugas Belum Dikumpulkan!*
+
+📚 *Course:* ${course.name}
+📝 *Task:* ${assignment.name}
+📅 *Deadline:* ${deadlineStr}
+⏰ *Sisa Waktu:* ${timeLeftStr}
+🔗 [Buka Tugas](${assignment.url})
+                            `.trim();
+                            telegramService.sendMessage(telegramConfig.chatId, message, telegramConfig.botToken).catch(err => {
+                                console.error('Failed to send Telegram reminder:', err);
+                            });
+                        }
+
+                        // Discord Reminder
+                        if (discordConfig && discordConfig.isActive && discordConfig.webhookUrl) {
+                            discordService.sendEmbed(discordConfig.webhookUrl, {
+                                title: '⚠️ Tugas Belum Dikumpulkan!',
+                                description: `Kamu belum mengumpulkan tugas di **${course.name}**`,
+                                color: DiscordColors.WARNING,
+                                fields: [
+                                    { name: '📝 Task', value: assignment.name, inline: true },
+                                    { name: '📅 Deadline', value: deadlineStr, inline: true },
+                                    { name: '⏰ Sisa Waktu', value: timeLeftStr, inline: true },
+                                    { name: '🔗 Link', value: `[Buka Tugas](${assignment.url})` }
+                                ],
+                                timestamp: new Date().toISOString()
+                            }).catch(err => {
+                                console.error('Failed to send Discord reminder:', err);
+                            });
+                        }
+
+                        // WhatsApp Reminder
+                        if (whatsappConfig && whatsappConfig.isActive && whatsappConfig.phoneNumber) {
+                            const waMessage = `⚠️ *Tugas Belum Dikumpulkan!*
+
+📚 *Course:* ${course.name}
+📝 *Task:* ${assignment.name}
+📅 *Deadline:* ${deadlineStr}
+⏰ *Sisa Waktu:* ${timeLeftStr}
+🔗 *Link:* ${assignment.url}
+
+_SPADA Task Manager_`;
+                            whatsappService.sendMessage(whatsappConfig.phoneNumber, waMessage).catch(err => {
+                                console.error('Failed to send WhatsApp reminder:', err);
+                            });
+                        }
+
+                        // Record notification to prevent spam
+                        await prisma.notification.create({
+                            data: {
+                                taskId: savedTask.id,
+                                message: `Pending reminder: ${assignment.name}`,
+                                type: 'pending_reminder',
+                                isDelivered: true
+                            }
+                        });
+                    }
+                }
             }
         }
     }
