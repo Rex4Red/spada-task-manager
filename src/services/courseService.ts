@@ -1,5 +1,5 @@
 import prisma from '../config/database';
-import { telegramService, discordService } from '../app';
+import { telegramService, discordService, whatsappService } from '../app';
 import { DiscordColors } from './discordService';
 
 export const saveCoursesToDb = async (userId: number, courses: any[]) => {
@@ -10,11 +10,13 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
         where: { id: userId },
         include: {
             telegramConfig: true,
-            discordConfig: true
+            discordConfig: true,
+            whatsappConfig: true
         }
     });
     const telegramConfig = user?.telegramConfig;
     const discordConfig = user?.discordConfig;
+    const whatsappConfig = user?.whatsappConfig;
 
 
     for (const course of courses) {
@@ -123,6 +125,21 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                             timestamp: new Date().toISOString()
                         }).catch(err => {
                             console.error('Failed to send Discord notification:', err);
+                        });
+                    }
+
+                    // WhatsApp Notification
+                    if (whatsappConfig && whatsappConfig.isActive && whatsappConfig.phoneNumber) {
+                        const waMessage = `🆕 *New Task Detected!*
+
+📚 *Course:* ${course.name}
+📝 *Task:* ${assignment.name}
+📅 *Deadline:* ${deadlineStr}
+🔗 *Link:* ${assignment.url}
+
+_SPADA Task Manager_`;
+                        whatsappService.sendMessage(whatsappConfig.phoneNumber, waMessage).catch(err => {
+                            console.error('Failed to send WhatsApp notification:', err);
                         });
                     }
                 }
