@@ -67,6 +67,10 @@ import fs from 'fs';
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
+// Serve screenshots as static files
+const screenshotDir = path.join(process.cwd(), 'screenshots');
+app.use('/screenshots', express.static(screenshotDir));
+
 // SPA fallback - any non-API route serves index.html (Express 5 syntax)
 app.get('{*path}', (req, res) => {
     const indexPath = path.join(publicPath, 'index.html');

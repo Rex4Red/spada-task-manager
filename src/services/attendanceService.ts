@@ -464,25 +464,21 @@ export class AttendanceService {
 
 _SPADA Task Manager_`;
 
-        // Send screenshot as actual image if available
+        // Build screenshot URL using APP_URL or domain
+        let screenshotUrl = '';
         if (result.screenshotPath && fs.existsSync(result.screenshotPath)) {
-            try {
-                const imageBuffer = fs.readFileSync(result.screenshotPath);
-                const base64Image = imageBuffer.toString('base64');
-                console.log(`[WhatsApp] Sending screenshot as image (${Math.round(base64Image.length / 1024)}KB base64)`);
-                const imageResult = await whatsappService.sendImage(phoneNumber, base64Image, caption);
-                if (imageResult.success) {
-                    console.log('[WhatsApp] Screenshot image sent successfully!');
-                    return;
-                }
-                console.log('[WhatsApp] Image send failed, falling back to text:', imageResult.error);
-            } catch (e: any) {
-                console.error('[WhatsApp] Error reading screenshot:', e.message);
-            }
+            const filename = path.basename(result.screenshotPath);
+            const appUrl = process.env.APP_URL || `http://localhost:${process.env.PORT || 7860}`;
+            screenshotUrl = `${appUrl}/screenshots/${filename}`;
+            console.log('[WhatsApp] Screenshot URL:', screenshotUrl);
         }
 
-        // Fallback: send text-only message
-        const textResult = await whatsappService.sendMessage(phoneNumber, caption);
+        // Build message with screenshot link if available
+        const fullMessage = screenshotUrl
+            ? `${caption}\n\n📷 Screenshot: ${screenshotUrl}`
+            : caption;
+
+        const textResult = await whatsappService.sendMessage(phoneNumber, fullMessage);
         if (!textResult.success) {
             console.error('[WhatsApp] Notification failed:', textResult.error);
         }
