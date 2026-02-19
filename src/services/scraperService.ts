@@ -206,7 +206,15 @@ export class ScraperService {
                         let timeRemaining = 'Unknown';
                         let dueDate = 'Unknown';
 
-                        // Try to parse the submission status table
+                        // 1. Try to extract due date from page header
+                        // SPADA shows "Due: Thursday, 19 February 2026, 11:55 PM" in the page content
+                        const pageText = document.body.innerText || '';
+                        const dueMatch = pageText.match(/Due:\s*(.+?)(?:\n|$)/i);
+                        if (dueMatch && dueMatch[1]) {
+                            dueDate = dueMatch[1].trim();
+                        }
+
+                        // 2. Parse the submission status table
                         const rows = Array.from(document.querySelectorAll('.generaltable tbody tr'));
                         rows.forEach(row => {
                             const header = row.querySelector('th')?.innerText.trim();
@@ -214,7 +222,8 @@ export class ScraperService {
 
                             if (header === 'Submission status') status = cell || status;
                             if (header === 'Time remaining') timeRemaining = cell || timeRemaining;
-                            if (header === 'Due date') dueDate = cell || dueDate;
+                            // Table "Due date" overrides if present
+                            if (header === 'Due date' && cell) dueDate = cell;
                         });
 
                         return { status, timeRemaining, dueDate };
