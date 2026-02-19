@@ -14,12 +14,18 @@ export class SchedulerService {
     private discordService: DiscordService;
     private whatsappService: WhatsAppService;
     private isSyncing = false;
+    private isAttending = false;
     private lastSyncIndex = 0;
 
     constructor(telegramService: TelegramService, discordService?: DiscordService, whatsappService?: WhatsAppService) {
         this.telegramService = telegramService;
         this.discordService = discordService || new DiscordService();
         this.whatsappService = whatsappService || new WhatsAppService();
+    }
+
+    /** Check if any browser operation is in progress */
+    private get isBrowserBusy(): boolean {
+        return this.isSyncing || this.isAttending;
     }
 
     public init() {
@@ -33,13 +39,17 @@ export class SchedulerService {
 
         // 2. Auto-Sync: Every 10 minutes
         cron.schedule('*/10 * * * *', async () => {
+            if (this.isAttending) {
+                console.log('[Auto-Sync] Attendance in progress, skipping sync...');
+                return;
+            }
             console.log('Running scheduled auto-sync...');
             await this.syncAllUsers();
         });
 
         // 3. Attendance Check: Every minute
         cron.schedule('* * * * *', async () => {
-            if (!this.isSyncing) {
+            if (!this.isBrowserBusy) {
                 await this.checkAttendanceSchedules();
             }
         });
@@ -51,6 +61,11 @@ export class SchedulerService {
      * Kill zombie Chrome processes to prevent resource exhaustion
      */
     private async killZombieChrome() {
+        // Never kill Chrome while attendance is running!
+        if (this.isAttending) {
+            console.log('[Cleanup] Skipping Chrome cleanup - attendance in progress');
+            return;
+        }
         try {
             const { execSync } = require('child_process');
             execSync('pkill -9 -f chrome 2>/dev/null || true', { timeout: 5000 });
@@ -90,6 +105,8 @@ export class SchedulerService {
 
             if (dueSchedules.length === 0) return;
 
+            // Set attending flag to block sync/cleanup
+            this.isAttending = true;
             console.log(`[Attendance Scheduler] Found ${dueSchedules.length} due schedules`);
 
             for (const schedule of dueSchedules) {
@@ -104,6 +121,8 @@ export class SchedulerService {
             }
         } catch (error) {
             console.error('[Attendance Scheduler] Error:', error);
+        } finally {
+            this.isAttending = false;
         }
     }
 
