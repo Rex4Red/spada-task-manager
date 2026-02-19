@@ -54,17 +54,6 @@ const AdminLayout = ({ children }) => {
 
                 {/* Bottom */}
                 <div className="flex flex-col gap-2 border-t border-[#30363d] pt-4">
-                    <div className="flex items-center gap-3 px-3 py-2">
-                        <div className="size-8 rounded-full bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">
-                                {admin?.username?.[0] || 'A'}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <p className="text-white text-sm font-medium">{admin?.username || 'Admin'}</p>
-                            <p className="text-xs text-[#6e7b8b]">Administrator</p>
-                        </div>
-                    </div>
                     <button
                         onClick={handleLogout}
                         className="flex w-full items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-900/20 text-[#9dabb9] hover:text-red-400 transition-colors"
