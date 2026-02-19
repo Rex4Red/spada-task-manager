@@ -27,42 +27,43 @@ export class AttendanceService {
     }
 
     /**
-     * Initialize the browser instance
+     * Initialize the browser instance - always creates a fresh browser
      */
     private async init() {
-        if (!this.browser) {
-            console.log('[Attendance] Launching Puppeteer...');
-            this.browser = await puppeteer.launch({
-                headless: true,
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--disable-software-rasterizer',
-                    '--disable-extensions',
-                    '--disable-background-networking',
-                    '--disable-default-apps',
-                    '--disable-sync',
-                    '--disable-translate',
-                    '--hide-scrollbars',
-                    '--metrics-recording-only',
-                    '--mute-audio',
-                    '--no-first-run',
-                    '--safebrowsing-disable-auto-update',
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    '--js-flags=--max-old-space-size=256',
-                    '--window-size=1280,720'
-                ],
-                defaultViewport: { width: 1280, height: 720 },
-                timeout: 60000
-            });
-            this.page = await this.browser.newPage();
-            await this.page.setUserAgent(
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            );
-        }
+        // Always close previous browser to avoid detached frame issues
+        await this.close();
+
+        console.log('[Attendance] Launching Puppeteer...');
+        this.browser = await puppeteer.launch({
+            headless: true,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-software-rasterizer',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--no-first-run',
+                '--safebrowsing-disable-auto-update',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--js-flags=--max-old-space-size=256',
+                '--window-size=1280,720'
+            ],
+            defaultViewport: { width: 1280, height: 720 },
+            timeout: 60000
+        });
+        this.page = await this.browser.newPage();
+        await this.page.setUserAgent(
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        );
     }
 
     /**
@@ -70,9 +71,18 @@ export class AttendanceService {
      */
     async close() {
         if (this.browser) {
-            await this.browser.close();
-            this.browser = null;
-            this.page = null;
+            try {
+                const browserProcess = this.browser.process();
+                await this.browser.close().catch(() => { });
+                if (browserProcess && !browserProcess.killed) {
+                    browserProcess.kill('SIGKILL');
+                }
+            } catch (e) {
+                console.error('[Attendance] Error closing browser:', e);
+            } finally {
+                this.browser = null;
+                this.page = null;
+            }
         }
     }
 
@@ -80,7 +90,7 @@ export class AttendanceService {
      * Login to SPADA
      */
     private async login(username: string, password: string): Promise<boolean> {
-        if (!this.page) await this.init();
+        if (!this.page) throw new Error('Browser not initialized. Call init() first.');
 
         try {
             console.log('[Attendance] Navigating to login page...');
