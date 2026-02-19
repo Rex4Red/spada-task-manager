@@ -8,9 +8,15 @@ import { DiscordColors } from './discordService';
  * - "Rabu, 26 Februari 2025, 23:59"
  * - "26 February 2025, 11:59 PM"
  * - "2025-02-26"
+ * 
+ * IMPORTANT: SPADA displays dates in WIB (UTC+7).
+ * We subtract 7 hours to convert to UTC for storage.
  */
 function parseSpadaDate(dateStr: string | null | undefined): Date | null {
     if (!dateStr || dateStr === 'Unknown' || dateStr === '-' || dateStr === 'No date') return null;
+
+    // WIB offset: 7 hours in milliseconds
+    const WIB_OFFSET_MS = 7 * 60 * 60 * 1000;
 
     // Indonesian month names → English
     const idMonths: Record<string, string> = {
@@ -28,20 +34,22 @@ function parseSpadaDate(dateStr: string | null | undefined): Date | null {
     }
 
     // Strip day-of-week prefix (e.g., "Wednesday, " or "Rabu, ")
-    // Matches any word followed by comma and space at the start
     cleaned = cleaned.replace(/^[A-Za-z]+,\s*/, '');
+
+    // Helper: convert WIB date to UTC
+    const toUTC = (date: Date): Date => new Date(date.getTime() - WIB_OFFSET_MS);
 
     // Try direct parse first
     let parsed = new Date(cleaned);
     if (!isNaN(parsed.getTime())) {
-        return parsed;
+        return toUTC(parsed);
     }
 
-    // Try removing the last comma before time: "26 February 2025, 11:59 PM" → "26 February 2025 11:59 PM"
-    const noComma = cleaned.replace(/,\s*(\d{1,2}[:\.]\d{2})/, ' $1');
+    // Try removing the last comma before time
+    const noComma = cleaned.replace(/,\s*(\d{1,2}[:.]\d{2})/, ' $1');
     parsed = new Date(noComma);
     if (!isNaN(parsed.getTime())) {
-        return parsed;
+        return toUTC(parsed);
     }
 
     // Try regex: "DD Month YYYY, HH:MM" or "DD Month YYYY, HH:MM AM/PM"
@@ -56,7 +64,7 @@ function parseSpadaDate(dateStr: string | null | undefined): Date | null {
         const dateString = `${month} ${day}, ${year} ${h.toString().padStart(2, '0')}:${minutes}:00`;
         parsed = new Date(dateString);
         if (!isNaN(parsed.getTime())) {
-            return parsed;
+            return toUTC(parsed);
         }
     }
 
