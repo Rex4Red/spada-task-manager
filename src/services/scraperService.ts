@@ -6,45 +6,44 @@ export class ScraperService {
     private readonly baseUrl = 'https://spada.upnyk.ac.id';
 
     /**
-     * Initialize the browser instance
+     * Initialize the browser instance - always creates a fresh browser
      */
     async init() {
-        if (!this.browser) {
-            console.log('Launching Puppeteer...');
-            this.browser = await puppeteer.launch({
-                headless: true,
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-gpu',
-                    '--no-first-run',
-                    '--disable-extensions',
-                    '--disable-background-networking',
-                    '--disable-default-apps',
-                    '--disable-sync',
-                    '--disable-translate',
-                    '--disable-features=IsolateOrigins,site-per-process',
-                    '--js-flags=--max-old-space-size=256'
-                ],
-                defaultViewport: { width: 1280, height: 720 },
-                timeout: 60000
-            });
-            this.page = await this.browser.newPage();
-            // Set user agent to avoid detection (basic)
-            await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
-        }
+        // Always close previous browser to avoid detached frame issues
+        await this.close();
+
+        console.log('Launching Puppeteer...');
+        this.browser = await puppeteer.launch({
+            headless: true,
+            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+            args: [
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-accelerated-2d-canvas',
+                '--disable-gpu',
+                '--no-first-run',
+                '--disable-extensions',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--disable-features=IsolateOrigins,site-per-process',
+                '--js-flags=--max-old-space-size=256'
+            ],
+            defaultViewport: { width: 1280, height: 720 },
+            timeout: 60000
+        });
+        this.page = await this.browser.newPage();
+        // Set user agent to avoid detection (basic)
+        await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
     }
 
     /**
      * Login to SPADA
      */
     async login(username: string, passwordUnencrypted: string): Promise<boolean> {
-        if (!this.browser || !this.page) {
-            await this.init();
-        }
+        await this.init();
 
         try {
             console.log(`[Scraper] Navigating to login page: ${this.baseUrl}/login/index.php`);
