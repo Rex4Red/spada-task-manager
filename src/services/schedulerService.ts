@@ -68,10 +68,50 @@ export class SchedulerService {
         }
         try {
             const { execSync } = require('child_process');
-            execSync('pkill -9 -f chrome 2>/dev/null || true', { timeout: 5000 });
-            await new Promise(r => setTimeout(r, 2000));
+
+            // Kill all Chrome/Chromium related processes aggressively
+            const killCommands = [
+                'pkill -9 -f "chrome" 2>/dev/null || true',
+                'pkill -9 -f "chromium" 2>/dev/null || true',
+                'pkill -9 -f "chrome-sandbox" 2>/dev/null || true',
+                'pkill -9 -f "headless_shell" 2>/dev/null || true',
+                'pkill -9 -f "google-chrome" 2>/dev/null || true',
+                // Kill orphaned renderer/gpu processes
+                'pkill -9 -f "type=renderer" 2>/dev/null || true',
+                'pkill -9 -f "type=gpu-process" 2>/dev/null || true',
+                'pkill -9 -f "type=utility" 2>/dev/null || true',
+                'pkill -9 -f "type=zygote" 2>/dev/null || true',
+            ];
+
+            for (const cmd of killCommands) {
+                try {
+                    execSync(cmd, { timeout: 3000 });
+                } catch (e) {
+                    // Ignore - process may not exist
+                }
+            }
+
+            // Clean up Chrome temp files that accumulate and consume disk/memory
+            try {
+                execSync('rm -rf /tmp/.org.chromium.* /tmp/puppeteer_dev_* /tmp/chrome_crashpad 2>/dev/null || true', { timeout: 3000 });
+            } catch (e) { }
+
+            // Clean up shared memory segments left by Chrome
+            try {
+                execSync('rm -rf /dev/shm/.org.chromium.* /dev/shm/shm-* 2>/dev/null || true', { timeout: 3000 });
+            } catch (e) { }
+
+            // Wait for OS to reclaim resources
+            await new Promise(r => setTimeout(r, 3000));
+
+            // Log memory status for debugging
+            try {
+                const memInfo = execSync('free -m | head -2', { timeout: 3000 }).toString().trim();
+                console.log(`[Cleanup] Memory status:\n${memInfo}`);
+            } catch (e) { }
+
         } catch (e) {
-            // Ignore - no Chrome processes to kill
+            console.error('[Cleanup] Error during Chrome cleanup:', e);
         }
     }
 
