@@ -57,11 +57,9 @@ export class AttendanceService {
                 '--js-flags=--max-old-space-size=256',
                 '--window-size=1280,720',
                 // Reduce process count to prevent fork exhaustion
-                '--single-process',
                 '--renderer-process-limit=1',
                 '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--no-zygote'
+                '--disable-renderer-backgrounding'
             ],
             defaultViewport: { width: 1280, height: 720 },
             timeout: 60000
