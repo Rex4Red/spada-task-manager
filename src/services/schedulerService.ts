@@ -58,7 +58,8 @@ export class SchedulerService {
     }
 
     /**
-     * Kill zombie Chrome processes to prevent resource exhaustion
+     * Kill zombie Chrome processes using Node.js native APIs (no fork needed).
+     * This works even when the system is out of process slots.
      */
     private async killZombieChrome() {
         // Never kill Chrome while attendance is running!
@@ -66,53 +67,78 @@ export class SchedulerService {
             console.log('[Cleanup] Skipping Chrome cleanup - attendance in progress');
             return;
         }
+
+        const fs = require('fs');
+        const path = require('path');
+        let killed = 0;
+
         try {
-            const { execSync } = require('child_process');
+            // Read /proc to find Chrome/Chromium processes without forking
+            const procDir = '/proc';
+            if (!fs.existsSync(procDir)) return; // Not Linux
 
-            // Kill all Chrome/Chromium related processes aggressively
-            const killCommands = [
-                'pkill -9 -f "chrome" 2>/dev/null || true',
-                'pkill -9 -f "chromium" 2>/dev/null || true',
-                'pkill -9 -f "chrome-sandbox" 2>/dev/null || true',
-                'pkill -9 -f "headless_shell" 2>/dev/null || true',
-                'pkill -9 -f "google-chrome" 2>/dev/null || true',
-                // Kill orphaned renderer/gpu processes
-                'pkill -9 -f "type=renderer" 2>/dev/null || true',
-                'pkill -9 -f "type=gpu-process" 2>/dev/null || true',
-                'pkill -9 -f "type=utility" 2>/dev/null || true',
-                'pkill -9 -f "type=zygote" 2>/dev/null || true',
-            ];
+            const entries = fs.readdirSync(procDir);
 
-            for (const cmd of killCommands) {
+            for (const entry of entries) {
+                // Only process numeric directories (PIDs)
+                if (!/^\d+$/.test(entry)) continue;
+                // Don't kill our own process
+                if (parseInt(entry) === process.pid) continue;
+
                 try {
-                    execSync(cmd, { timeout: 3000 });
-                } catch (e) {
-                    // Ignore - process may not exist
+                    const cmdlinePath = path.join(procDir, entry, 'cmdline');
+                    if (!fs.existsSync(cmdlinePath)) continue;
+
+                    const cmdline = fs.readFileSync(cmdlinePath, 'utf8').toLowerCase();
+
+                    // Check if this is a Chrome/Chromium related process
+                    if (cmdline.includes('chrome') || cmdline.includes('chromium') ||
+                        cmdline.includes('headless_shell') || cmdline.includes('type=renderer') ||
+                        cmdline.includes('type=gpu') || cmdline.includes('type=utility') ||
+                        cmdline.includes('type=zygote')) {
+
+                        const pid = parseInt(entry);
+                        try {
+                            process.kill(pid, 'SIGKILL');
+                            killed++;
+                        } catch (killErr: any) {
+                            // ESRCH = process already dead, ignore
+                            if (killErr.code !== 'ESRCH') {
+                                // EPERM = no permission, ignore
+                            }
+                        }
+                    }
+                } catch (readErr) {
+                    // Process may have exited between readdir and readFile, ignore
                 }
             }
 
-            // Clean up Chrome temp files that accumulate and consume disk/memory
-            try {
-                execSync('rm -rf /tmp/.org.chromium.* /tmp/puppeteer_dev_* /tmp/chrome_crashpad 2>/dev/null || true', { timeout: 3000 });
-            } catch (e) { }
-
-            // Clean up shared memory segments left by Chrome
-            try {
-                execSync('rm -rf /dev/shm/.org.chromium.* /dev/shm/shm-* 2>/dev/null || true', { timeout: 3000 });
-            } catch (e) { }
-
-            // Wait for OS to reclaim resources
-            await new Promise(r => setTimeout(r, 3000));
-
-            // Log memory status for debugging
-            try {
-                const memInfo = execSync('free -m | head -2', { timeout: 3000 }).toString().trim();
-                console.log(`[Cleanup] Memory status:\n${memInfo}`);
-            } catch (e) { }
-
+            if (killed > 0) {
+                console.log(`[Cleanup] Killed ${killed} Chrome zombie processes (native)`);
+            }
         } catch (e) {
-            console.error('[Cleanup] Error during Chrome cleanup:', e);
+            console.error('[Cleanup] Error scanning /proc:', e);
         }
+
+        // Clean up Chrome temp files using Node.js fs (no fork needed)
+        try {
+            const tmpDirs = ['/tmp', '/dev/shm'];
+            for (const dir of tmpDirs) {
+                if (!fs.existsSync(dir)) continue;
+                const items = fs.readdirSync(dir);
+                for (const item of items) {
+                    if (item.startsWith('.org.chromium.') || item.startsWith('puppeteer_dev_') ||
+                        item.startsWith('chrome_crashpad') || item.startsWith('shm-')) {
+                        try {
+                            fs.rmSync(path.join(dir, item), { recursive: true, force: true });
+                        } catch (e) { }
+                    }
+                }
+            }
+        } catch (e) { }
+
+        // Wait for OS to reclaim resources
+        await new Promise(r => setTimeout(r, 2000));
     }
 
     /**

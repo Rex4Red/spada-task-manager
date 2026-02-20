@@ -29,7 +29,14 @@ export class ScraperService {
                 '--disable-sync',
                 '--disable-translate',
                 '--disable-features=IsolateOrigins,site-per-process',
-                '--js-flags=--max-old-space-size=256'
+                '--js-flags=--max-old-space-size=256',
+                // Reduce process count to prevent fork exhaustion
+                '--single-process',
+                '--renderer-process-limit=1',
+                '--disable-software-rasterizer',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--no-zygote'
             ],
             defaultViewport: { width: 1280, height: 720 },
             timeout: 60000
