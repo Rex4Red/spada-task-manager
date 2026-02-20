@@ -34,7 +34,9 @@ export class ScraperService {
                 '--renderer-process-limit=1',
                 '--disable-software-rasterizer',
                 '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding'
+                '--disable-renderer-backgrounding',
+                '--disable-features=dbus',
+                '--disable-breakpad'
             ],
             defaultViewport: { width: 1280, height: 720 },
             timeout: 60000
