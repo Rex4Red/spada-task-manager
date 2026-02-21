@@ -90,6 +90,19 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
 
 
     for (const course of courses) {
+        // Skip courses that have been soft-deleted by the user
+        const existingCourse = await prisma.course.findUnique({
+            where: {
+                sourceId_userId: {
+                    sourceId: course.id,
+                    userId: userId
+                }
+            }
+        });
+        if (existingCourse?.isDeleted) {
+            continue;
+        }
+
         // Upsert Course
         const savedCourse = await prisma.course.upsert({
             where: {

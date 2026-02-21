@@ -389,9 +389,9 @@ export class SchedulerService {
                     if (loggedIn) {
                         consecutiveFailures = 0; // Reset on success
 
-                        // Only sync courses that the user has added to the DB
+                        // Only sync courses that the user has added to the DB (exclude deleted ones)
                         const savedCourses = await prisma.course.findMany({
-                            where: { userId: user.id }
+                            where: { userId: user.id, isDeleted: false }
                         });
 
                         console.log(`[Auto-Sync] Syncing ${savedCourses.length} saved courses for user: ${user.email}`);
