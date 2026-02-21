@@ -100,7 +100,7 @@ export class AttendanceService {
 
         try {
             console.log('[Attendance] Navigating to login page...');
-            await this.page!.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page!.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Check if already logged in
             const isLoggedIn = await this.page!.$('.logininfo a[href*="logout.php"]');
@@ -114,7 +114,7 @@ export class AttendanceService {
             await this.page!.type('#password', password);
 
             await Promise.all([
-                this.page!.waitForNavigation({ waitUntil: 'networkidle2' }),
+                this.page!.waitForNavigation({ waitUntil: 'domcontentloaded' }),
                 this.page!.click('#loginbtn')
             ]);
 
@@ -223,7 +223,7 @@ export class AttendanceService {
                 // Navigate to last attendance link (most recent)
                 const targetUrl = attendanceLinks[attendanceLinks.length - 1];
                 console.log(`[Attendance] Found ${attendanceLinks.length} attendance link(s), navigating to: ${targetUrl}`);
-                await this.page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+                await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 console.log('[Attendance] Attendance page loaded!');
                 return true;
             }
@@ -260,7 +260,7 @@ export class AttendanceService {
 
             // Navigate to submit page
             console.log('[Attendance] Navigating to submit page...');
-            await this.page.goto(submitHref, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page.goto(submitHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Select "Hadir" (first radio button)
             const radioButtons = await this.page.$$('input[type="radio"]');
@@ -311,7 +311,7 @@ export class AttendanceService {
 
             // Step 2: Navigate to course
             console.log(`[Attendance] Navigating to course: ${courseUrl}`);
-            await this.page!.goto(courseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page!.goto(courseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Step 3: Find attendance link
             const attendanceFound = await this.findAttendanceLink();

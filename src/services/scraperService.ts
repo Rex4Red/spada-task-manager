@@ -55,7 +55,7 @@ export class ScraperService {
         try {
             console.log(`[Scraper] Navigating to login page: ${this.baseUrl}/login/index.php`);
             await this.page!.goto(`${this.baseUrl}/login/index.php`, {
-                waitUntil: 'networkidle2',
+                waitUntil: 'domcontentloaded',
                 timeout: 60000
             });
 
@@ -89,7 +89,7 @@ export class ScraperService {
 
             console.log('[Scraper] Clicking login...');
             await Promise.all([
-                this.page!.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
+                this.page!.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 60000 }),
                 this.page!.click('#loginbtn')
             ]);
 
@@ -127,7 +127,7 @@ export class ScraperService {
         try {
             console.log('Navigating to dashboard to scrape courses...');
             // Navigate to dashboard first to ensure sidebar is loaded
-            await this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Wait for sidebar to load
             await new Promise(r => setTimeout(r, 2000));
@@ -187,7 +187,7 @@ export class ScraperService {
         try {
             const courseUrl = `${this.baseUrl}/course/view.php?id=${courseId}`;
             console.log(`Navigating to course: ${courseUrl}`);
-            await this.page.goto(courseUrl, { waitUntil: 'networkidle2' });
+            await this.page.goto(courseUrl, { waitUntil: 'domcontentloaded' });
 
             // Find all assignment links
             // Assignments usually have 'mod/assign/view.php?id=' in the URL
@@ -265,7 +265,7 @@ export class ScraperService {
 
         try {
             console.log(`Navigating to specific course: ${courseUrl}`);
-            await this.page.goto(courseUrl, { waitUntil: 'networkidle2' });
+            await this.page.goto(courseUrl, { waitUntil: 'domcontentloaded' });
 
             // Extract Course ID from URL
             const idMatch = courseUrl.match(/id=(\d+)/);
