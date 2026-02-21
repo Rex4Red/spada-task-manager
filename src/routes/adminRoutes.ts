@@ -6,7 +6,10 @@ import {
     getUserDetail,
     deleteUser,
     getRecentActivity,
-    cleanupOrphanData
+    cleanupOrphanData,
+    getAdminSettings,
+    updateAdminSettings,
+    testAdminNotification
 } from '../controllers/adminController';
 import { adminAuth } from '../middleware/adminAuth';
 
@@ -24,5 +27,11 @@ router.delete('/users/:id', adminAuth, deleteUser);
 router.get('/activity', adminAuth, getRecentActivity);
 router.post('/cleanup', adminAuth, cleanupOrphanData);
 
+// Admin settings routes
+router.get('/settings', adminAuth, getAdminSettings);
+router.put('/settings', adminAuth, updateAdminSettings);
+router.post('/settings/test-notification', adminAuth, testAdminNotification);
+
 export default router;
+
 

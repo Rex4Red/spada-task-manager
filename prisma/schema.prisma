@@ -159,3 +159,11 @@ model AttendanceLog {
   
   schedule      AttendanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 }
+
+model AdminSettings {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -11,11 +11,19 @@ const AdminDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [waStatus, setWaStatus] = useState(null);
 
+    // Admin error notification settings
+    const [adminWa, setAdminWa] = useState('');
+    const [errorNotifEnabled, setErrorNotifEnabled] = useState(false);
+    const [settingsSaving, setSettingsSaving] = useState(false);
+    const [settingsMsg, setSettingsMsg] = useState('');
+    const [testingSending, setTestingSending] = useState(false);
+
     const API_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
     useEffect(() => {
         fetchData();
         fetchWaStatus();
+        fetchAdminSettings();
     }, []);
 
     const fetchWaStatus = async () => {
@@ -24,6 +32,70 @@ const AdminDashboard = () => {
             const data = await res.json();
             setWaStatus(data);
         } catch (e) { /* silent */ }
+    };
+
+    const fetchAdminSettings = async () => {
+        try {
+            const res = await fetch(`${API_URL}/admin/settings`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setAdminWa(data.data.adminWhatsapp || '');
+                setErrorNotifEnabled(data.data.errorNotifEnabled || false);
+            }
+        } catch (e) { /* silent */ }
+    };
+
+    const handleSaveSettings = async () => {
+        setSettingsSaving(true);
+        setSettingsMsg('');
+        try {
+            const res = await fetch(`${API_URL}/admin/settings`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    adminWhatsapp: adminWa,
+                    errorNotifEnabled
+                })
+            });
+            const data = await res.json();
+            setSettingsMsg(data.success ? '✅ Settings saved!' : '❌ ' + data.message);
+        } catch (e) {
+            setSettingsMsg('❌ Failed to save');
+        } finally {
+            setSettingsSaving(false);
+            setTimeout(() => setSettingsMsg(''), 3000);
+        }
+    };
+
+    const handleTestNotif = async () => {
+        if (!adminWa) {
+            setSettingsMsg('❌ Set WhatsApp number first');
+            setTimeout(() => setSettingsMsg(''), 3000);
+            return;
+        }
+        setTestingSending(true);
+        try {
+            const res = await fetch(`${API_URL}/admin/settings/test-notification`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify({ phoneNumber: adminWa })
+            });
+            const data = await res.json();
+            setSettingsMsg(data.success ? '✅ Test sent!' : '❌ ' + data.message);
+        } catch (e) {
+            setSettingsMsg('❌ Failed to send test');
+        } finally {
+            setTestingSending(false);
+            setTimeout(() => setSettingsMsg(''), 3000);
+        }
     };
 
     const handleWaTest = async () => {
@@ -133,6 +205,68 @@ const AdminDashboard = () => {
                                     </p>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Error Notification Settings */}
+                        <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4 mb-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="inline-flex items-center justify-center size-10 rounded-lg bg-gradient-to-br from-red-500 to-orange-400">
+                                    <span className="material-symbols-outlined text-white text-xl">notifications_active</span>
+                                </div>
+                                <div>
+                                    <h2 className="text-white font-semibold">Error Notifications</h2>
+                                    <p className="text-[#9dabb9] text-xs">Receive WhatsApp alerts when system errors occur</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Toggle */}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[#c9d1d9] text-sm">Enable error notifications</span>
+                                    <button
+                                        onClick={() => setErrorNotifEnabled(!errorNotifEnabled)}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${errorNotifEnabled ? 'bg-green-500' : 'bg-[#30363d]'
+                                            }`}
+                                    >
+                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${errorNotifEnabled ? 'translate-x-6' : 'translate-x-1'
+                                            }`} />
+                                    </button>
+                                </div>
+
+                                {/* Phone Input */}
+                                <div>
+                                    <label className="text-[#9dabb9] text-xs block mb-1">Admin WhatsApp Number</label>
+                                    <input
+                                        type="text"
+                                        value={adminWa}
+                                        onChange={(e) => setAdminWa(e.target.value)}
+                                        placeholder="628123456789"
+                                        className="w-full bg-[#0d1117] border border-[#30363d] rounded-lg px-3 py-2 text-white text-sm focus:border-purple-500 focus:outline-none"
+                                    />
+                                    <p className="text-[#6e7b8b] text-xs mt-1">Format: 628xxx (with country code, no +)</p>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <button
+                                        onClick={handleSaveSettings}
+                                        disabled={settingsSaving}
+                                        className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        {settingsSaving ? 'Saving...' : 'Save Settings'}
+                                    </button>
+                                    <button
+                                        onClick={handleTestNotif}
+                                        disabled={testingSending || !adminWa}
+                                        className="px-4 py-2 bg-[#21262d] hover:bg-[#30363d] disabled:opacity-50 text-white text-sm font-medium rounded-lg border border-[#30363d] transition-colors"
+                                    >
+                                        {testingSending ? 'Sending...' : '🔔 Test Notification'}
+                                    </button>
+                                    {settingsMsg && (
+                                        <span className="text-sm">{settingsMsg}</span>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* Recent Users & Activity */}

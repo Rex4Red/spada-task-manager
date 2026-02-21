@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import prisma from '../config/database';
 import { AdminRequest } from '../middleware/adminAuth';
+import { AdminNotificationService } from '../services/adminNotificationService';
 
 /**
  * Get dashboard statistics
@@ -270,5 +271,86 @@ export const cleanupOrphanData = async (req: AdminRequest, res: Response) => {
     } catch (error) {
         console.error('Cleanup error:', error);
         res.status(500).json({ success: false, message: 'Failed to cleanup orphan data' });
+    }
+};
+
+/**
+ * Get admin settings
+ */
+export const getAdminSettings = async (req: AdminRequest, res: Response) => {
+    try {
+        const settings = await prisma.adminSettings.findMany();
+        const settingsMap: Record<string, string> = {};
+        for (const s of settings) {
+            settingsMap[s.key] = s.value;
+        }
+
+        res.json({
+            success: true,
+            data: {
+                adminWhatsapp: settingsMap['admin_whatsapp'] || '',
+                errorNotifEnabled: settingsMap['error_notif_enabled'] === 'true'
+            }
+        });
+    } catch (error) {
+        console.error('Get admin settings error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get settings' });
+    }
+};
+
+/**
+ * Update admin settings
+ */
+export const updateAdminSettings = async (req: AdminRequest, res: Response) => {
+    try {
+        const { adminWhatsapp, errorNotifEnabled } = req.body;
+
+        // Upsert admin WhatsApp number
+        if (adminWhatsapp !== undefined) {
+            await prisma.adminSettings.upsert({
+                where: { key: 'admin_whatsapp' },
+                update: { value: adminWhatsapp },
+                create: { key: 'admin_whatsapp', value: adminWhatsapp }
+            });
+        }
+
+        // Upsert error notification toggle
+        if (errorNotifEnabled !== undefined) {
+            await prisma.adminSettings.upsert({
+                where: { key: 'error_notif_enabled' },
+                update: { value: String(errorNotifEnabled) },
+                create: { key: 'error_notif_enabled', value: String(errorNotifEnabled) }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Admin settings updated'
+        });
+    } catch (error) {
+        console.error('Update admin settings error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update settings' });
+    }
+};
+
+/**
+ * Test admin notification
+ */
+export const testAdminNotification = async (req: AdminRequest, res: Response) => {
+    try {
+        const { phoneNumber } = req.body;
+        if (!phoneNumber) {
+            return res.status(400).json({ success: false, message: 'Phone number required' });
+        }
+
+        const result = await AdminNotificationService.sendTestNotification(phoneNumber);
+        if (result.success) {
+            res.json({ success: true, message: 'Test notification sent!' });
+        } else {
+            res.status(400).json({ success: false, message: result.error || 'Failed to send' });
+        }
+    } catch (error) {
+        console.error('Test notification error:', error);
+        res.status(500).json({ success: false, message: 'Failed to send test notification' });
     }
 };

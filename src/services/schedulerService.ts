@@ -8,6 +8,7 @@ import { ScraperService } from './scraperService';
 import { saveCoursesToDb } from './courseService';
 import { decrypt } from '../utils/encryption';
 import { formatDistanceToNow } from 'date-fns';
+import { AdminNotificationService } from './adminNotificationService';
 
 export class SchedulerService {
     private telegramService: TelegramService;
@@ -367,6 +368,11 @@ export class SchedulerService {
                 // Fail-fast: if 2 consecutive users fail to launch Chrome, stop
                 if (consecutiveFailures >= 2) {
                     console.log('[Auto-Sync] Too many Chrome launch failures, stopping this cycle');
+                    AdminNotificationService.sendErrorNotification(
+                        'CHROME_CONSECUTIVE_FAILURES',
+                        'Too many Chrome launch failures, sync cycle stopped',
+                        `Failed at user batch starting index ${startIdx}`
+                    );
                     break;
                 }
 
@@ -417,10 +423,20 @@ export class SchedulerService {
                     } else {
                         console.error(`[Auto-Sync] Login failed for user: ${user.email}`);
                         consecutiveFailures++;
+                        AdminNotificationService.sendErrorNotification(
+                            'SYNC_LOGIN_FAILED',
+                            `Login failed for user: ${user.email}`,
+                            `Consecutive failures: ${consecutiveFailures}`
+                        );
                     }
                 } catch (error: any) {
                     console.error(`[Auto-Sync] Error syncing user ${user.email}:`, error.message || error);
                     consecutiveFailures++;
+                    AdminNotificationService.sendErrorNotification(
+                        'SYNC_ERROR',
+                        error.message || String(error),
+                        `User: ${user.email}`
+                    );
                 } finally {
                     // Ensure browser is closed before moving to next user
                     await scraper.close();
@@ -428,8 +444,13 @@ export class SchedulerService {
                     await new Promise(r => setTimeout(r, 10000));
                 }
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('[Auto-Sync] Global error in syncAllUsers:', error);
+            AdminNotificationService.sendErrorNotification(
+                'SYNC_GLOBAL_ERROR',
+                error.message || String(error),
+                'Global error in syncAllUsers'
+            );
         } finally {
             // Final cleanup
             await this.killZombieChrome();
