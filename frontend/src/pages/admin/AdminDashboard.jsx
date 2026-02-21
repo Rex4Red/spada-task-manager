@@ -225,10 +225,10 @@ const AdminDashboard = () => {
                                     <span className="text-[#c9d1d9] text-sm">Enable error notifications</span>
                                     <button
                                         onClick={() => setErrorNotifEnabled(!errorNotifEnabled)}
-                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${errorNotifEnabled ? 'bg-green-500' : 'bg-[#30363d]'
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ${errorNotifEnabled ? 'bg-green-500' : 'bg-[#30363d]'
                                             }`}
                                     >
-                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${errorNotifEnabled ? 'translate-x-6' : 'translate-x-1'
+                                        <span className={`inline-block h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${errorNotifEnabled ? 'translate-x-[22px]' : 'translate-x-[3px]'
                                             }`} />
                                     </button>
                                 </div>
