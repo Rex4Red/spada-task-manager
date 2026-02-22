@@ -21,7 +21,7 @@ interface SpadaCourse {
     shortname?: string;
     progress: number;
     category?: string;
-    imageUrl?: string;
+    viewurl?: string;
 }
 
 interface SpadaAssignment {
@@ -65,7 +65,7 @@ export class SpadaApiService {
     }
 
     /**
-     * Get all enrolled courses
+     * Get all enrolled courses (in-progress only)
      */
     async getCourses(): Promise<SpadaCourse[]> {
         if (!this.token) throw new Error('Not logged in');
@@ -75,89 +75,59 @@ export class SpadaApiService {
         });
 
         const data = await res.json();
-        console.log(`[SPADA-API] getCourses response keys: ${Object.keys(data)}, success: ${data.success}, data type: ${typeof data.data}, isArray: ${Array.isArray(data.data)}`);
+        console.log(`[SPADA-API] getCourses response: success=${data.success}`);
 
-        if (data.success) {
-            // Handle both { data: [...] } and { data: { courses: [...] } }
-            if (Array.isArray(data.data)) return data.data;
-            if (Array.isArray(data.data?.courses)) return data.data.courses;
-            console.error('[SPADA-API] Unexpected courses format:', JSON.stringify(data).substring(0, 500));
+        if (data.success && data.data) {
+            // API returns { data: { total: N, courses: [...] } }
+            if (Array.isArray(data.data.courses)) {
+                console.log(`[SPADA-API] Found ${data.data.courses.length} courses`);
+                return data.data.courses;
+            }
+            // Fallback: data is directly an array
+            if (Array.isArray(data.data)) {
+                console.log(`[SPADA-API] Found ${data.data.length} courses (direct array)`);
+                return data.data;
+            }
+            console.error('[SPADA-API] Unexpected courses format');
             return [];
         }
         throw new Error(data.message || 'Failed to get courses');
     }
 
     /**
-     * Get assignments for a specific course
-     * Returns data in the format expected by saveCoursesToDb
+     * Get assignments for a specific course via the /assignments endpoint
      */
     async getAssignments(courseId: string): Promise<any[]> {
         if (!this.token) throw new Error('Not logged in');
 
         try {
-            const res = await fetch(`${SPADA_API_BASE}/api/courses/${courseId}/contents`, {
-                headers: { 'Authorization': `Bearer ${this.token}` }
-            });
-
-            const data = await res.json();
-
-            if (!data.success) {
-                console.error(`[SPADA-API] Failed to get contents for course ${courseId}`);
-                return [];
-            }
-
-            // Filter only assignment-type activities and map to expected format
-            const activities = data.data?.activities || [];
-            const assignments = activities
-                .filter((a: any) => a.type === 'assign')
-                .map((a: any) => ({
-                    name: a.name?.replace(/ Assignment$/, '').trim() || a.name,
-                    url: a.url || `https://spada.upnyk.ac.id/mod/assign/view.php?id=${a.cmid}`,
-                    dueDate: a.dueDate || 'Unknown',
-                    status: a.submissionStatus || 'Unknown',
-                    timeRemaining: 'Unknown'
-                }));
-
-            // If no assignments found via contents, try dedicated assignments endpoint
-            // (some courses don't list assigns in contents)
-            if (assignments.length === 0) {
-                return await this.getAssignmentsDedicated(courseId);
-            }
-
-            return assignments;
-        } catch (error: any) {
-            console.error(`[SPADA-API] Error getting assignments for course ${courseId}: ${error.message}`);
-            // Fallback to dedicated endpoint
-            return await this.getAssignmentsDedicated(courseId);
-        }
-    }
-
-    /**
-     * Fallback: Get assignments using the dedicated assignments endpoint
-     */
-    private async getAssignmentsDedicated(courseId: string): Promise<any[]> {
-        if (!this.token) return [];
-
-        try {
-            // Try fetching from a dedicated assignments path if available
             const res = await fetch(`${SPADA_API_BASE}/api/courses/${courseId}/assignments`, {
                 headers: { 'Authorization': `Bearer ${this.token}` }
             });
 
-            if (!res.ok) return [];
+            if (!res.ok) {
+                console.error(`[SPADA-API] Assignments endpoint returned ${res.status} for course ${courseId}`);
+                return [];
+            }
 
             const data = await res.json();
-            if (!data.success) return [];
+            if (!data.success) {
+                console.error(`[SPADA-API] Failed to get assignments for course ${courseId}`);
+                return [];
+            }
 
             const assignments = data.data?.assignments || [];
+            console.log(`[SPADA-API] Course ${courseId}: found ${assignments.length} assignments`);
+
             return assignments.map((a: SpadaAssignment) => ({
                 name: a.name,
                 url: a.url || `https://spada.upnyk.ac.id/mod/assign/view.php?id=${a.cmid}`,
-                dueDate: a.dueDate || 'Unknown',
+                dueDate: (a.dueDate && a.dueDate !== '-') ? a.dueDate : 'No due date',
                 status: a.submissionStatus || 'Unknown',
                 timeRemaining: 'Unknown'
             }));
-        } catch {
+        } catch (error: any) {
+            console.error(`[SPADA-API] Error getting assignments for course ${courseId}: ${error.message}`);
             return [];
         }
     }
