@@ -70,7 +70,7 @@ export class SpadaApiService {
     async getCourses(): Promise<SpadaCourse[]> {
         if (!this.token) throw new Error('Not logged in');
 
-        const res = await fetch(`${SPADA_API_BASE}/api/courses`, {
+        const res = await fetch(`${SPADA_API_BASE}/api/courses?classification=inprogress`, {
             headers: { 'Authorization': `Bearer ${this.token}` }
         });
 
