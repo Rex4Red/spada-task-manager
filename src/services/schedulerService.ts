@@ -38,15 +38,15 @@ export class SchedulerService {
             await this.checkDeadlines();
         });
 
-        // 2. Auto-Sync: Every 10 minutes
-        cron.schedule('*/10 * * * *', async () => {
-            if (this.isAttending) {
-                console.log('[Auto-Sync] Attendance in progress, skipping sync...');
-                return;
-            }
-            console.log('Running scheduled auto-sync...');
-            await this.syncAllUsers();
-        });
+        // 2. Auto-Sync: TEMPORARILY DISABLED while API migration stabilizes
+        // cron.schedule('*/10 * * * *', async () => {
+        //     if (this.isAttending) {
+        //         console.log('[Auto-Sync] Attendance in progress, skipping sync...');
+        //         return;
+        //     }
+        //     console.log('Running scheduled auto-sync...');
+        //     await this.syncAllUsers();
+        // });
 
         // 3. Attendance Check: Every minute
         cron.schedule('* * * * *', async () => {

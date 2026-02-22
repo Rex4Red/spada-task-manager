@@ -62,12 +62,16 @@ export const syncCourses = async (req: Request, res: Response) => {
             return;
         }
 
-        const courses = await api.getCourses();
-        console.log(`Got ${courses.length} courses from API`);
+        // Only sync courses already saved in DB (not all SPADA courses)
+        const savedCourses = await prisma.course.findMany({
+            where: { userId, isDeleted: false }
+        });
 
-        if (courses.length === 0) {
+        console.log(`Syncing ${savedCourses.length} saved courses via API`);
+
+        if (savedCourses.length === 0) {
             res.status(200).json({
-                message: 'No courses found in your SPADA account. Make sure you are enrolled in at least one course.',
+                message: 'No courses to sync. Add courses first using "Add New Course".',
                 code: 'NO_COURSES',
                 data: []
             });
@@ -76,13 +80,13 @@ export const syncCourses = async (req: Request, res: Response) => {
 
         const coursesWithAssignments = [];
 
-        for (const course of courses) {
-            console.log(`Fetching assignments for course: ${course.fullname}`);
-            const assignments = await api.getAssignments(String(course.id));
+        for (const course of savedCourses) {
+            console.log(`Fetching assignments for course: ${course.name} (${course.sourceId})`);
+            const assignments = await api.getAssignments(course.sourceId);
             coursesWithAssignments.push({
-                id: String(course.id),
-                name: course.fullname,
-                url: `https://spada.upnyk.ac.id/course/view.php?id=${course.id}`,
+                id: course.sourceId,
+                name: course.name,
+                url: course.url,
                 assignments
             });
         }
