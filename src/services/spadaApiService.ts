@@ -75,8 +75,14 @@ export class SpadaApiService {
         });
 
         const data = await res.json();
+        console.log(`[SPADA-API] getCourses response keys: ${Object.keys(data)}, success: ${data.success}, data type: ${typeof data.data}, isArray: ${Array.isArray(data.data)}`);
+
         if (data.success) {
-            return data.data || [];
+            // Handle both { data: [...] } and { data: { courses: [...] } }
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.data?.courses)) return data.data.courses;
+            console.error('[SPADA-API] Unexpected courses format:', JSON.stringify(data).substring(0, 500));
+            return [];
         }
         throw new Error(data.message || 'Failed to get courses');
     }
