@@ -1,6 +1,6 @@
 FROM node:20-slim
 
-# Install dependencies for Puppeteer/Chromium
+# Install Chrome (still needed for attendance auto-click only)
 RUN apt-get update \
   && apt-get install -y wget gnupg \
   && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
@@ -10,7 +10,7 @@ RUN apt-get update \
   --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# Config env to use installed chrome
+# Config env to use installed chrome (for attendance service only)
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV DBUS_SESSION_BUS_ADDRESS=/dev/null

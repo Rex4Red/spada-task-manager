@@ -4,7 +4,7 @@ import { TelegramService } from './telegramService';
 import { DiscordService, DiscordColors } from './discordService';
 import { WhatsAppService } from './whatsappService';
 import { AttendanceService } from './attendanceService';
-import { ScraperService } from './scraperService';
+import { SpadaApiService } from './spadaApiService';
 import { saveCoursesToDb } from './courseService';
 import { decrypt } from '../utils/encryption';
 import { formatDistanceToNow } from 'date-fns';
@@ -336,9 +336,6 @@ export class SchedulerService {
 
         this.isSyncing = true;
         try {
-            // Kill any zombie Chrome processes before starting
-            await this.killZombieChrome();
-
             // Find users with SPADA credentials
             const users = await prisma.user.findMany({
                 where: {
@@ -349,8 +346,8 @@ export class SchedulerService {
 
             if (users.length === 0) return;
 
-            // Limit to max 3 users per sync cycle to prevent resource exhaustion
-            const MAX_USERS_PER_CYCLE = 3;
+            // Sync ALL users per cycle (API is lightweight, no Chrome needed)
+            const MAX_USERS_PER_CYCLE = 5;
             const startIdx = this.lastSyncIndex % users.length;
             const usersToSync = [];
             for (let i = 0; i < Math.min(MAX_USERS_PER_CYCLE, users.length); i++) {
@@ -358,36 +355,32 @@ export class SchedulerService {
             }
             this.lastSyncIndex = (startIdx + usersToSync.length) % users.length;
 
-            console.log(`[Auto-Sync] Syncing ${usersToSync.length}/${users.length} users (batch starting at index ${startIdx})`);
+            console.log(`[Auto-Sync] Syncing ${usersToSync.length}/${users.length} users via API (batch starting at index ${startIdx})`);
 
             let consecutiveFailures = 0;
 
             for (const user of usersToSync) {
                 if (!user.spadaUsername || !user.spadaPassword) continue;
 
-                // Fail-fast: if 2 consecutive users fail to launch Chrome, stop
-                if (consecutiveFailures >= 2) {
-                    console.log('[Auto-Sync] Too many Chrome launch failures, stopping this cycle');
+                if (consecutiveFailures >= 3) {
+                    console.log('[Auto-Sync] Too many consecutive API failures, stopping this cycle');
                     AdminNotificationService.sendErrorNotification(
-                        'CHROME_CONSECUTIVE_FAILURES',
-                        'Too many Chrome launch failures, sync cycle stopped',
+                        'API_CONSECUTIVE_FAILURES',
+                        'Too many consecutive API failures, sync cycle stopped',
                         `Failed at user batch starting index ${startIdx}`
                     );
                     break;
                 }
 
-                // Kill Chrome before each user to ensure clean slate
-                await this.killZombieChrome();
-
                 console.log(`[Auto-Sync] Syncing data for user: ${user.email}`);
-                const scraper = new ScraperService();
+                const api = new SpadaApiService();
 
                 try {
                     const decryptedPassword = decrypt(user.spadaPassword);
-                    const loggedIn = await scraper.login(user.spadaUsername, decryptedPassword);
+                    const loggedIn = await api.login(user.spadaUsername, decryptedPassword);
 
                     if (loggedIn) {
-                        consecutiveFailures = 0; // Reset on success
+                        consecutiveFailures = 0;
 
                         // Only sync courses that the user has added to the DB (exclude deleted ones)
                         const savedCourses = await prisma.course.findMany({
@@ -398,14 +391,11 @@ export class SchedulerService {
 
                         const coursesWithAssignments = [];
 
-                        // Iterate saved courses and scrape assignments
                         for (const course of savedCourses) {
-                            // Throttle between courses
-                            await new Promise(r => setTimeout(r, 2000));
-                            console.log(`[Auto-Sync] Scraping assignments for course: ${course.name} (${course.sourceId})`);
+                            console.log(`[Auto-Sync] Fetching assignments for course: ${course.name} (${course.sourceId})`);
 
                             try {
-                                const assignments = await scraper.scrapeAssignments(course.sourceId);
+                                const assignments = await api.getAssignments(course.sourceId);
                                 coursesWithAssignments.push({
                                     id: course.sourceId,
                                     name: course.name,
@@ -413,7 +403,7 @@ export class SchedulerService {
                                     assignments
                                 });
                             } catch (err) {
-                                console.error(`[Auto-Sync] Failed to scrape course ${course.id}:`, err);
+                                console.error(`[Auto-Sync] Failed to fetch course ${course.id}:`, err);
                             }
                         }
 
@@ -437,12 +427,9 @@ export class SchedulerService {
                         error.message || String(error),
                         `User: ${user.email}`
                     );
-                } finally {
-                    // Ensure browser is closed before moving to next user
-                    await scraper.close();
-                    // Wait 10 seconds between users to let processes fully terminate
-                    await new Promise(r => setTimeout(r, 10000));
                 }
+                // Small delay between users to be polite to the API
+                await new Promise(r => setTimeout(r, 1000));
             }
         } catch (error: any) {
             console.error('[Auto-Sync] Global error in syncAllUsers:', error);
@@ -452,8 +439,6 @@ export class SchedulerService {
                 'Global error in syncAllUsers'
             );
         } finally {
-            // Final cleanup
-            await this.killZombieChrome();
             this.isSyncing = false;
         }
     }

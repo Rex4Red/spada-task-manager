@@ -1,11 +1,9 @@
 import { Request, Response } from 'express';
-import { ScraperService } from '../services/scraperService';
+import { SpadaApiService } from '../services/spadaApiService';
 import prisma from '../config/database';
 import { saveCoursesToDb } from '../services/courseService';
 import { encrypt, decrypt } from '../utils/encryption';
 
-
-const scraperService = new ScraperService();
 
 export const testScraping = async (req: Request, res: Response) => {
     const { username, password } = req.body;
@@ -16,8 +14,8 @@ export const testScraping = async (req: Request, res: Response) => {
     }
 
     try {
-        const success = await scraperService.login(username, password);
-        await scraperService.close();
+        const api = new SpadaApiService();
+        const success = await api.login(username, password);
 
         if (success) {
             res.status(200).json({ message: 'Login successful!' });
@@ -25,8 +23,7 @@ export const testScraping = async (req: Request, res: Response) => {
             res.status(401).json({ message: 'Login failed' });
         }
     } catch (error: any) {
-        await scraperService.close();
-        res.status(500).json({ message: 'Scraping error', error: error.message });
+        res.status(500).json({ message: 'Login test error', error: error.message });
     }
 };
 
@@ -53,8 +50,9 @@ export const syncCourses = async (req: Request, res: Response) => {
     }
 
     try {
-        console.log('Starting sync process...');
-        const isLoggedIn = await scraperService.login(u, p);
+        console.log('Starting sync process via API...');
+        const api = new SpadaApiService();
+        const isLoggedIn = await api.login(u, p);
 
         if (!isLoggedIn) {
             res.status(401).json({
@@ -64,11 +62,10 @@ export const syncCourses = async (req: Request, res: Response) => {
             return;
         }
 
-        const courses = await scraperService.scrapeCourses();
-        console.log(`Scraped ${courses.length} courses`);
+        const courses = await api.getCourses();
+        console.log(`Got ${courses.length} courses from API`);
 
         if (courses.length === 0) {
-            await scraperService.close();
             res.status(200).json({
                 message: 'No courses found in your SPADA account. Make sure you are enrolled in at least one course.',
                 code: 'NO_COURSES',
@@ -80,15 +77,15 @@ export const syncCourses = async (req: Request, res: Response) => {
         const coursesWithAssignments = [];
 
         for (const course of courses) {
-            console.log(`Scraping assignments for course: ${course.name}`);
-            const assignments = await scraperService.scrapeAssignments(course.id);
+            console.log(`Fetching assignments for course: ${course.fullname}`);
+            const assignments = await api.getAssignments(String(course.id));
             coursesWithAssignments.push({
-                ...course,
+                id: String(course.id),
+                name: course.fullname,
+                url: `https://spada.upnyk.ac.id/course/view.php?id=${course.id}`,
                 assignments
             });
         }
-
-        await scraperService.close();
 
         // Save to Database
         await saveCoursesToDb(userId, coursesWithAssignments);
@@ -101,7 +98,6 @@ export const syncCourses = async (req: Request, res: Response) => {
 
     } catch (error: any) {
         console.error('Sync error:', error);
-        await scraperService.close();
         res.status(500).json({
             message: 'Sync error: ' + error.message,
             code: 'SYNC_ERROR',
@@ -135,16 +131,37 @@ export const scrapeSpecificCourse = async (req: Request, res: Response) => {
     }
 
     try {
-        console.log(`Starting manual scrape for: ${courseUrl}`);
-        const isLoggedIn = await scraperService.login(username, password);
+        // Extract course ID from URL
+        const idMatch = courseUrl.match(/id=(\d+)/);
+        if (!idMatch) {
+            res.status(400).json({ message: 'Invalid course URL — could not extract course ID' });
+            return;
+        }
+        const courseId = idMatch[1];
+
+        console.log(`Starting sync for course ${courseId} via API...`);
+        const api = new SpadaApiService();
+        const isLoggedIn = await api.login(username, password);
 
         if (!isLoggedIn) {
             res.status(401).json({ message: 'Login failed. Please check your credentials.' });
             return;
         }
 
-        const courseData = await scraperService.scrapeCourseByUrl(courseUrl);
-        await scraperService.close();
+        // Get course info from course list
+        const allCourses = await api.getCourses();
+        const courseInfo = allCourses.find(c => String(c.id) === courseId);
+        const courseName = courseInfo?.fullname || `Course ${courseId}`;
+
+        // Get assignments
+        const assignments = await api.getAssignments(courseId);
+
+        const courseData = {
+            id: courseId,
+            name: courseName,
+            url: courseUrl,
+            assignments
+        };
 
         // Only update DB credentials if they were provided in the request (meaning new/updated)
         if (req.body.username && req.body.password) {
@@ -158,17 +175,16 @@ export const scrapeSpecificCourse = async (req: Request, res: Response) => {
             });
         }
 
-        // 2. Save Course to Database
+        // Save Course to Database
         await saveCoursesToDb(userId, [courseData]);
 
         res.status(200).json({
-            message: 'Course scraped & saved successfully. Auto-sync enabled.',
+            message: 'Course synced & saved successfully. Auto-sync enabled.',
             data: courseData
         });
 
     } catch (error: any) {
-        console.error('Manual scrape error:', error);
-        await scraperService.close();
-        res.status(500).json({ message: 'Scraping error', error: error.message });
+        console.error('Manual sync error:', error);
+        res.status(500).json({ message: 'Sync error', error: error.message });
     }
 };
