@@ -62,16 +62,13 @@ export const syncCourses = async (req: Request, res: Response) => {
             return;
         }
 
-        // Only sync courses already saved in DB (not all SPADA courses)
-        const savedCourses = await prisma.course.findMany({
-            where: { userId, isDeleted: false }
-        });
+        // Fetch all in-progress courses from SPADA (manual sync = discovery)
+        const courses = await api.getCourses();
+        console.log(`Got ${courses.length} in-progress courses from API`);
 
-        console.log(`Syncing ${savedCourses.length} saved courses via API`);
-
-        if (savedCourses.length === 0) {
+        if (courses.length === 0) {
             res.status(200).json({
-                message: 'No courses to sync. Add courses first using "Add New Course".',
+                message: 'No in-progress courses found in your SPADA account.',
                 code: 'NO_COURSES',
                 data: []
             });
@@ -80,13 +77,13 @@ export const syncCourses = async (req: Request, res: Response) => {
 
         const coursesWithAssignments = [];
 
-        for (const course of savedCourses) {
-            console.log(`Fetching assignments for course: ${course.name} (${course.sourceId})`);
-            const assignments = await api.getAssignments(course.sourceId);
+        for (const course of courses) {
+            console.log(`Fetching assignments for: ${course.fullname} (${course.id})`);
+            const assignments = await api.getAssignments(String(course.id));
             coursesWithAssignments.push({
-                id: course.sourceId,
-                name: course.name,
-                url: course.url,
+                id: String(course.id),
+                name: course.fullname,
+                url: course.viewurl || `https://spada.upnyk.ac.id/course/view.php?id=${course.id}`,
                 assignments
             });
         }
