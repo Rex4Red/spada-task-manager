@@ -9,13 +9,10 @@ const MyCourses = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [newCourseUrl, setNewCourseUrl] = useState('');
-    const [syncingNew, setSyncingNew] = useState(false);
     const [syncingAll, setSyncingAll] = useState(false);
     const [syncingId, setSyncingId] = useState(null);
     const [stats, setStats] = useState({ totalCourses: 0, pendingTasks: 0 });
     const [hasCredentials, setHasCredentials] = useState(true);
-    const [showHelp, setShowHelp] = useState(false);
     const [expandedCourseId, setExpandedCourseId] = useState(null);
     const [syncError, setSyncError] = useState(null);
 
@@ -82,32 +79,7 @@ const MyCourses = () => {
         }
     };
 
-    const handleAddCourse = async (e) => {
-        e.preventDefault();
-        if (!newCourseUrl) return;
 
-        setSyncingNew(true);
-        try {
-            // Try adding course without explicit credentials (backend will use stored ones)
-            await api.post('/scraper/course', {
-                courseUrl: newCourseUrl
-            });
-            setNewCourseUrl('');
-            await fetchCourses(); // Refresh
-            alert('Course Added Successfully!');
-        } catch (error) {
-            console.error('Sync failed:', error);
-            if (error.response && error.response.data && error.response.data.code === 'CREDENTIALS_REQUIRED') {
-                if (window.confirm('SPADA credentials are missing. Please save them in Settings to enable this feature. Go to Settings now?')) {
-                    window.location.href = '/settings';
-                }
-            } else {
-                alert(error.response?.data?.message || 'Failed to add course.');
-            }
-        } finally {
-            setSyncingNew(false);
-        }
-    };
 
     const handleSyncCourse = async (courseId) => {
         const course = courses.find(c => c.id === courseId);
@@ -222,45 +194,69 @@ const MyCourses = () => {
                     </p>
                 </div>
 
-                {/* Add New Course Hero */}
-                <div className="w-full bg-gradient-to-r from-[#1c252e] to-[#161b22] rounded-xl p-6 md:p-10 border border-[#283039] relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-                    <div className="relative z-10 flex flex-col gap-6 max-w-3xl">
-                        <div className="flex flex-col gap-2">
-                            <h2 className="text-white text-xl md:text-2xl font-bold flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">add_circle</span>
-                                Add New Course
-                            </h2>
-                            <p className="text-[#9dabb9] text-sm md:text-base">Paste your SPADA UPN Yogyakarta course URL to automatically fetch syllabus and assignments.</p>
-                        </div>
-                        <form onSubmit={handleAddCourse} className="flex flex-col w-full gap-3">
-                            <div className="flex w-full items-center rounded-xl bg-[#283039] border border-transparent focus-within:border-primary/50 transition-colors h-14 px-4 gap-3">
-                                <span className="material-symbols-outlined text-[#9dabb9]">link</span>
-                                <input
-                                    className="bg-transparent w-full text-white placeholder:text-[#5e6a75] text-sm focus:outline-none h-full"
-                                    placeholder="https://spada.upnyk.ac.id/course/view.php?id=..."
-                                    value={newCourseUrl}
-                                    onChange={(e) => setNewCourseUrl(e.target.value)}
-                                />
+                {/* Getting Started Guide - shown when no courses yet */}
+                {courses.length === 0 && !loading && (
+                    <div className="w-full bg-gradient-to-r from-[#1c252e] to-[#161b22] rounded-xl p-6 md:p-10 border border-[#283039] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="relative z-10 flex flex-col gap-6 max-w-3xl">
+                            <div className="flex flex-col gap-2">
+                                <h2 className="text-white text-xl md:text-2xl font-bold flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-primary">rocket_launch</span>
+                                    Cara Memulai
+                                </h2>
+                                <p className="text-[#9dabb9] text-sm md:text-base">Ikuti langkah-langkah berikut untuk mulai mengelola tugas SPADA kamu secara otomatis.</p>
                             </div>
-                            <button
-                                type="submit"
-                                disabled={syncingNew}
-                                className={`h-14 w-full px-6 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 ${syncingNew ? 'opacity-70 cursor-not-allowed' : ''}`}
-                            >
-                                <span className={`material-symbols-outlined text-[20px] ${syncingNew ? 'animate-spin' : ''}`}>{syncingNew ? 'sync' : 'add'}</span>
-                                <span>{syncingNew ? 'Adding...' : 'Add Course'}</span>
-                            </button>
-                        </form>
-                        <button
-                            onClick={() => setShowHelp(true)}
-                            className="text-[#9dabb9] text-xs font-medium hover:text-white flex items-center gap-1 w-fit"
-                        >
-                            <span className="material-symbols-outlined text-[16px]">help</span>
-                            Not sure where to find the URL?
-                        </button>
+                            <div className="flex flex-col gap-4">
+                                {/* Step 1 */}
+                                <div className={`flex items-start gap-4 p-4 rounded-xl border ${hasCredentials ? 'bg-green-500/5 border-green-500/20' : 'bg-yellow-500/5 border-yellow-500/20'}`}>
+                                    <div className={`flex items-center justify-center w-8 h-8 rounded-full shrink-0 text-sm font-bold ${hasCredentials ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                        {hasCredentials ? <span className="material-symbols-outlined text-[18px]">check</span> : '1'}
+                                    </div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-white font-semibold text-sm">Konfigurasi Akun SPADA</span>
+                                        <span className="text-[#9dabb9] text-xs leading-relaxed">
+                                            {hasCredentials
+                                                ? 'Akun SPADA sudah terhubung. ✓'
+                                                : 'Buka halaman Settings dan masukkan username & password SPADA kamu.'}
+                                        </span>
+                                        {!hasCredentials && (
+                                            <a href="/settings" className="text-primary text-xs font-medium hover:underline flex items-center gap-1 mt-1 w-fit">
+                                                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                                                Buka Settings
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                                {/* Step 2 */}
+                                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#283039]/50 border border-[#283039]">
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary shrink-0 text-sm font-bold">2</div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-white font-semibold text-sm">Klik "Sync All Courses"</span>
+                                        <span className="text-[#9dabb9] text-xs leading-relaxed">Tekan tombol hijau di atas untuk mengambil semua mata kuliah yang terdaftar di SPADA secara otomatis.</span>
+                                    </div>
+                                </div>
+                                {/* Step 3 */}
+                                <div className="flex items-start gap-4 p-4 rounded-xl bg-[#283039]/50 border border-[#283039]">
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 text-primary shrink-0 text-sm font-bold">3</div>
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-white font-semibold text-sm">Selesai! Tugas akan otomatis ter-update</span>
+                                        <span className="text-[#9dabb9] text-xs leading-relaxed">Sistem akan auto-sync setiap 10 menit untuk mengambil tugas terbaru dari semua course kamu.</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Info banner - always visible when courses exist */}
+                {courses.length > 0 && (
+                    <div className="w-full bg-[#1c252e]/60 rounded-xl p-4 border border-[#283039] flex items-start gap-3">
+                        <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0">info</span>
+                        <p className="text-[#9dabb9] text-xs leading-relaxed">
+                            <span className="text-white font-medium">Auto-Sync aktif</span> — Sistem otomatis mengambil tugas terbaru dari SPADA setiap 10 menit. Kamu juga bisa klik <span className="text-white font-medium">"Sync All Courses"</span> untuk sync manual kapan saja.
+                        </p>
+                    </div>
+                )}
 
                 {/* Course Grid */}
                 <div className="flex flex-col gap-4">
@@ -357,78 +353,7 @@ const MyCourses = () => {
                 </div>
             </div>
 
-            {/* Help Modal */}
-            {showHelp && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-[#1c252e] border border-[#3b4754] rounded-xl w-full max-w-lg p-6 flex flex-col gap-6 shadow-2xl relative max-h-[90vh] overflow-hidden flex flex-col">
-                        <div className="flex items-center justify-between shrink-0">
-                            <h3 className="text-white text-xl font-bold">How to Find Course URL</h3>
-                            <button
-                                onClick={() => setShowHelp(false)}
-                                className="text-[#9dabb9] hover:text-white transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
 
-                        <div className="flex flex-col gap-6 overflow-y-auto pr-2 pb-4">
-                            {/* Video Tutorial */}
-                            <div className="flex flex-col gap-2">
-                                <h4 className="text-primary font-bold text-sm uppercase tracking-wider">Video Tutorial</h4>
-                                <div className="relative w-full pt-[56.25%] rounded-lg overflow-hidden border border-[#3b4754]">
-                                    <iframe
-                                        className="absolute top-0 left-0 w-full h-full"
-                                        src="https://www.youtube.com/embed/3WqNt8aYgas"
-                                        title="How to Find Course URL Tutorial"
-                                        frameBorder="0"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                        allowFullScreen
-                                    ></iframe>
-                                </div>
-                            </div>
-
-                            <div className="h-px bg-[#3b4754] w-full"></div>
-
-                            {/* Step 1 */}
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">1</span>
-                                    <h4 className="text-white font-bold text-sm">Login to SPADA</h4>
-                                </div>
-                                <p className="text-[#9dabb9] text-sm pl-8">Go to <a href="https://spada.upnyk.ac.id" target="_blank" rel="noreferrer" className="text-primary hover:underline">spada.upnyk.ac.id</a> and log in with your account.</p>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">2</span>
-                                    <h4 className="text-white font-bold text-sm">Open Your Course</h4>
-                                </div>
-                                <p className="text-[#9dabb9] text-sm pl-8">Navigate to the specific subject/course you want to add.</p>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="flex flex-col gap-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold">3</span>
-                                    <h4 className="text-white font-bold text-sm">Copy the URL</h4>
-                                </div>
-                                <p className="text-[#9dabb9] text-sm pl-8">Copy the link from the address bar at the top of your browser.</p>
-                                <div className="pl-8 mt-2">
-                                    <img src="/spada_url_guide.png" alt="Example of copying URL" className="rounded-lg border border-[#3b4754] w-full" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={() => setShowHelp(false)}
-                            className="w-full py-2.5 bg-[#283039] hover:bg-[#323b46] text-white font-medium rounded-lg transition-colors shrink-0"
-                        >
-                            Got it
-                        </button>
-                    </div>
-                </div>
-            )}
         </Layout>
     );
 };
