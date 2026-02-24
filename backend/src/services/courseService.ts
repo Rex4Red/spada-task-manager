@@ -52,42 +52,94 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     }
                 }
 
-                // Check if task already exists to determine if it's NEW
-                const existingTask = await prisma.task.findUnique({
-                    where: {
-                        courseId_title: {
-                            courseId: savedCourse.id,
-                            title: assignment.name
-                        }
-                    }
-                });
+                // Normalize title: remove trailing " Assignment" suffix that SPADA sometimes adds
+                const normalizedTitle = (assignment.name || '')
+                    .replace(/\s+Assignment\s*$/i, '')
+                    .trim();
 
-                const savedTask = await prisma.task.upsert({
-                    where: {
-                        courseId_title: {
+                // Strategy 1: Try to find existing task by URL (most reliable, unique per assignment)
+                let existingTask = null;
+                if (assignment.url) {
+                    existingTask = await prisma.task.findFirst({
+                        where: {
                             courseId: savedCourse.id,
-                            title: assignment.name
+                            url: assignment.url
                         }
-                    },
-                    update: {
-                        status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
-                        deadline: dueDateObj,
-                        url: assignment.url,
-                        description: `Type: ${assignment.status}`,
-                        timeRemaining: assignment.timeRemaining
-                    },
-                    create: {
-                        title: assignment.name,
-                        description: `Type: ${assignment.status}`,
-                        status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
-                        deadline: dueDateObj,
-                        url: assignment.url,
-                        timeRemaining: assignment.timeRemaining,
-                        courseId: savedCourse.id,
-                        userId: userId,
-                        isScraped: true
+                    });
+                }
+
+                // Strategy 2: Try to find by normalized title
+                if (!existingTask) {
+                    existingTask = await prisma.task.findUnique({
+                        where: {
+                            courseId_title: {
+                                courseId: savedCourse.id,
+                                title: normalizedTitle
+                            }
+                        }
+                    });
+                }
+
+                // Strategy 3: Try to find by original title (before normalization)
+                if (!existingTask && normalizedTitle !== assignment.name) {
+                    existingTask = await prisma.task.findUnique({
+                        where: {
+                            courseId_title: {
+                                courseId: savedCourse.id,
+                                title: assignment.name
+                            }
+                        }
+                    });
+                }
+
+                const taskData = {
+                    status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
+                    deadline: dueDateObj,
+                    url: assignment.url,
+                    description: `Type: ${assignment.status}`,
+                    timeRemaining: assignment.timeRemaining
+                };
+
+                let savedTask;
+                if (existingTask) {
+                    // Update existing task (also normalize the title)
+                    savedTask = await prisma.task.update({
+                        where: { id: existingTask.id },
+                        data: {
+                            ...taskData,
+                            title: normalizedTitle
+                        }
+                    });
+                } else {
+                    // Create new task
+                    try {
+                        savedTask = await prisma.task.create({
+                            data: {
+                                title: normalizedTitle,
+                                ...taskData,
+                                courseId: savedCourse.id,
+                                userId: userId,
+                                isScraped: true
+                            }
+                        });
+                    } catch (createErr: any) {
+                        // Handle race condition: if another sync created it in the meantime
+                        if (createErr.code === 'P2002') {
+                            console.log(`[CourseService] Duplicate detected for "${normalizedTitle}", updating instead.`);
+                            savedTask = await prisma.task.update({
+                                where: {
+                                    courseId_title: {
+                                        courseId: savedCourse.id,
+                                        title: normalizedTitle
+                                    }
+                                },
+                                data: taskData
+                            });
+                        } else {
+                            throw createErr;
+                        }
                     }
-                });
+                }
 
                 // Send Notification if NEW Task
                 if (!existingTask) {
