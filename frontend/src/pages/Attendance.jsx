@@ -90,7 +90,7 @@ const Attendance = () => {
                 </div>
 
                 {/* Cara Menggunakan Guide - always visible */}
-                <div className="bg-gradient-to-r from-[#1c252e] to-[#161b22] rounded-xl p-5 md:p-6 border border-[#283039] relative overflow-hidden mb-6">
+                <div className="bg-gradient-to-r from-[#1c252e] to-[#161b22] rounded-xl p-5 md:p-6 border border-[#283039] relative mb-6">
                     <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="relative z-10 flex flex-col gap-4">
                         <h3 className="text-white text-base font-bold flex items-center gap-2">
