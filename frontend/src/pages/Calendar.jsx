@@ -10,19 +10,14 @@ const Calendar = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    console.log('Calendar Component Rendering...');
 
     useEffect(() => {
-        console.log('Calendar useEffect running...');
         fetchTasks();
     }, []);
 
     const fetchTasks = async () => {
-        console.log('Fetching tasks...');
         try {
             const response = await api.get('/courses');
-            console.log('API Response:', response.data);
-            // Flatten tasks from courses
             let allTasks = [];
             if (response.data.data) {
                 response.data.data.forEach(course => {
@@ -30,7 +25,6 @@ const Calendar = () => {
                         allTasks = [...allTasks, ...course.tasks];
                     }
                 });
-                console.log("All Tasks Flattened:", allTasks);
                 setTasks(allTasks);
             }
         } catch (error) {
@@ -126,6 +120,17 @@ const Calendar = () => {
                     </div>
                 </div>
 
+                {/* Feature Description */}
+                <div className="bg-[#1c252e]/60 rounded-xl p-4 border border-[#283039] flex items-start gap-3">
+                    <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0">info</span>
+                    <p className="text-[#9dabb9] text-xs leading-relaxed">
+                        <span className="text-white font-medium">Kalender Tugas</span> &mdash; Menampilkan semua deadline tugas dari mata kuliah SPADA yang sudah di-sync. Klik tanggal untuk melihat detail tugas.
+                        <span className="inline-flex items-center gap-1 ml-2"><span className="inline-block w-2 h-2 rounded-full bg-yellow-500"></span> Aktif</span>
+                        <span className="inline-flex items-center gap-1 ml-2"><span className="inline-block w-2 h-2 rounded-full bg-red-500"></span> Mendesak</span>
+                        <span className="inline-flex items-center gap-1 ml-2"><span className="inline-block w-2 h-2 rounded-full bg-green-500"></span> Selesai</span>
+                    </p>
+                </div>
+
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Calendar Grid */}
                     <div className="flex-1 bg-[#161e27] rounded-3xl border border-[#283039] p-4 md:p-6 flex flex-col shadow-2xl relative overflow-visible">
@@ -164,23 +169,26 @@ const Calendar = () => {
                                             {format(day, 'd')}
                                         </span>
 
-                                        {/* Task Indicators - hidden on very small screens */}
-                                        <div className="hidden md:flex gap-0.5 flex-wrap justify-center">
-                                            {dayTasks.slice(0, 3).map((t, i) => {
-                                                const isUrgent = t.timeRemaining?.toLowerCase().includes('hour') || t.timeRemaining?.toLowerCase().includes('1 day');
-                                                let dotColor = 'bg-gray-500';
-                                                if (t.status === 'COMPLETED') dotColor = 'bg-green-500';
-                                                else if (isUrgent) dotColor = 'bg-red-500';
-                                                else dotColor = 'bg-yellow-500';
-
-                                                return (
-                                                    <div key={i} className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white/80' : dotColor}`} />
-                                                )
-                                            })}
-                                        </div>
-                                        {/* Mobile: just show count if tasks exist */}
+                                        {/* Task Indicators */}
                                         {dayTasks.length > 0 && (
-                                            <div className="md:hidden w-1.5 h-1.5 rounded-full bg-primary"></div>
+                                            <div className={`flex items-center justify-center gap-0.5 mt-0.5 ${isSelected ? '' : ''}`}>
+                                                {dayTasks.length <= 3 ? (
+                                                    dayTasks.map((t, i) => {
+                                                        const isUrgent = t.timeRemaining?.toLowerCase().includes('hour') || t.timeRemaining?.toLowerCase().includes('1 day');
+                                                        let dotColor = 'bg-yellow-500';
+                                                        if (t.status === 'COMPLETED') dotColor = 'bg-green-500';
+                                                        else if (isUrgent) dotColor = 'bg-red-500';
+
+                                                        return (
+                                                            <div key={i} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white/80' : dotColor}`} />
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                                        {dayTasks.length}
+                                                    </span>
+                                                )}
+                                            </div>
                                         )}
                                     </button>
                                 );
