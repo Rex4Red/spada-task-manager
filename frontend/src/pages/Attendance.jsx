@@ -34,7 +34,6 @@ const Attendance = () => {
                     <div className="flex items-center gap-3 mb-2">
                         <span className="material-symbols-outlined text-primary text-3xl">fingerprint</span>
                         <h1 className="text-2xl font-bold text-white">Auto Attendance</h1>
-                        <span className="px-2 py-0.5 text-xs font-semibold bg-primary/20 text-primary rounded-full">BETA</span>
                     </div>
                 </div>
 
@@ -82,18 +81,12 @@ const Attendance = () => {
                     </div>
                 </div>
 
-                {/* Warning Card */}
-                <div className="bg-upn-yellow/10 border border-upn-yellow/30 rounded-xl p-4 mb-6">
-                    <div className="flex items-start gap-3">
-                        <span className="material-symbols-outlined text-upn-yellow">warning</span>
-                        <div>
-                            <p className="text-upn-yellow font-medium text-sm">Catatan Penting</p>
-                            <p className="text-[#9dabb9] text-xs mt-1">
-                                Fitur ini masih dalam tahap BETA. Pastikan kredensial SPADA kamu sudah tersimpan di Settings.
-                                Absensi hanya berhasil jika halaman presensi sudah dibuka oleh dosen.
-                            </p>
-                        </div>
-                    </div>
+                {/* Important Note */}
+                <div className="bg-[#1c252e]/60 rounded-xl p-4 mb-6 border border-[#283039] flex items-start gap-3">
+                    <span className="material-symbols-outlined text-primary text-[20px] mt-0.5 shrink-0">info</span>
+                    <p className="text-[#9dabb9] text-xs leading-relaxed">
+                        <span className="text-white font-medium">Catatan Penting</span> — Pastikan kredensial SPADA kamu sudah tersimpan di <a href="/settings" className="text-primary hover:underline">Settings</a>. Absensi hanya berhasil jika halaman presensi sudah dibuka oleh dosen.
+                    </p>
                 </div>
 
                 {/* Courses List */}
@@ -107,10 +100,42 @@ const Attendance = () => {
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
                 ) : courses.length === 0 ? (
-                    <div className="text-center py-10 text-[#9dabb9]">
-                        <span className="material-symbols-outlined text-4xl mb-2">school</span>
-                        <p>Belum ada mata kuliah tersimpan.</p>
-                        <p className="text-xs mt-1">Sync data dari SPADA di menu Courses terlebih dahulu.</p>
+                    <div className="bg-gradient-to-r from-[#1c252e] to-[#161b22] rounded-xl p-6 md:p-8 border border-[#283039] relative overflow-hidden">
+                        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+                        <div className="relative z-10 flex flex-col gap-5 max-w-2xl mx-auto">
+                            <div className="flex flex-col items-center text-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-5xl">school</span>
+                                <h3 className="text-white text-lg font-bold">Belum ada mata kuliah</h3>
+                                <p className="text-[#9dabb9] text-sm">Untuk menggunakan Auto Attendance, kamu perlu sync dulu mata kuliah dari SPADA.</p>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#283039]/50 border border-[#283039]">
+                                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary shrink-0 text-xs font-bold">1</div>
+                                    <div>
+                                        <span className="text-white font-semibold text-sm">Buka halaman Courses</span>
+                                        <p className="text-[#9dabb9] text-xs mt-0.5">Klik menu <strong className="text-white">Courses</strong> di sidebar.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#283039]/50 border border-[#283039]">
+                                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary shrink-0 text-xs font-bold">2</div>
+                                    <div>
+                                        <span className="text-white font-semibold text-sm">Klik "Sync All Courses"</span>
+                                        <p className="text-[#9dabb9] text-xs mt-0.5">Sistem akan mengambil semua mata kuliah dari SPADA secara otomatis.</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-xl bg-[#283039]/50 border border-[#283039]">
+                                    <div className="flex items-center justify-center w-7 h-7 rounded-full bg-primary/20 text-primary shrink-0 text-xs font-bold">3</div>
+                                    <div>
+                                        <span className="text-white font-semibold text-sm">Kembali ke sini</span>
+                                        <p className="text-[#9dabb9] text-xs mt-0.5">Setelah sync selesai, kembali ke halaman ini untuk mengatur jadwal absensi otomatis.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <a href="/courses" className="w-full py-3 bg-primary hover:bg-blue-600 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2">
+                                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                Buka Halaman Courses
+                            </a>
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-3">
