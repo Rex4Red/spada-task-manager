@@ -163,7 +163,8 @@ const Dashboard = () => {
 
     const getDeadlineStatusDisplay = (task) => {
         const timeStr = (task.timeRemaining || '').toLowerCase();
-        if (timeStr.includes('overdue')) return <span className="text-red-500 font-bold">Overdue</span>;
+        if (timeStr.includes('overdue') && !timeStr.includes('submitted')) return <span className="text-red-500 font-bold">Overdue</span>;
+        if (timeStr.includes('late') && timeStr.includes('submitted')) return <span className="text-orange-400 font-bold">Late</span>;
         if (timeStr.includes('submitted')) return <span className="text-green-500 font-bold">Done</span>;
 
         // Only show date if it's a valid date
@@ -173,9 +174,17 @@ const Dashboard = () => {
         return '-';
     };
 
-    const isTaskCompleted = (task) => {
+    // Returns 'completed' | 'late' | 'pending'
+    const getTaskStatus = (task) => {
         const timeStr = (task.timeRemaining || '').toLowerCase();
-        return task.status === 'COMPLETED' || timeStr.includes('submitted');
+        if (task.status === 'LATE' || (timeStr.includes('submitted') && timeStr.includes('late'))) return 'late';
+        if (task.status === 'COMPLETED' || timeStr.includes('submitted')) return 'completed';
+        return 'pending';
+    };
+
+    const isTaskCompleted = (task) => {
+        const s = getTaskStatus(task);
+        return s === 'completed' || s === 'late';
     };
 
     const handleDeleteTask = async (taskId) => {
@@ -482,13 +491,26 @@ const Dashboard = () => {
                                                         </p>
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${isTaskCompleted(task)
-                                                            ? 'bg-upn-green/10 text-upn-green border-upn-green/20'
-                                                            : 'bg-upn-gold/10 text-upn-gold border-upn-gold/20'
-                                                            }`}>
-                                                            <span className={`size-1.5 rounded-full ${isTaskCompleted(task) ? 'bg-upn-green' : 'bg-upn-gold animate-pulse'}`}></span>
-                                                            {isTaskCompleted(task) ? 'Submitted' : 'Pending'}
-                                                        </span>
+                                                        {(() => {
+                                                            const s = getTaskStatus(task);
+                                                            const styles = s === 'completed'
+                                                                ? 'bg-upn-green/10 text-upn-green border-upn-green/20'
+                                                                : s === 'late'
+                                                                    ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+                                                                    : 'bg-upn-gold/10 text-upn-gold border-upn-gold/20';
+                                                            const dotStyle = s === 'completed'
+                                                                ? 'bg-upn-green'
+                                                                : s === 'late'
+                                                                    ? 'bg-orange-400'
+                                                                    : 'bg-upn-gold animate-pulse';
+                                                            const label = s === 'completed' ? 'Submitted' : s === 'late' ? 'Late' : 'Pending';
+                                                            return (
+                                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${styles}`}>
+                                                                    <span className={`size-1.5 rounded-full ${dotStyle}`}></span>
+                                                                    {label}
+                                                                </span>
+                                                            );
+                                                        })()}
                                                     </td>
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-3">

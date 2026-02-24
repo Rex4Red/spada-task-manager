@@ -107,8 +107,21 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     });
                 }
 
+                // Determine status based on submission status AND timeRemaining
+                let taskStatus = 'PENDING';
+                const timeStr = (assignment.timeRemaining || '').toLowerCase();
+                if (assignment.status === 'Submitted for grading') {
+                    if (timeStr.includes('late')) {
+                        taskStatus = 'LATE';
+                    } else {
+                        taskStatus = 'COMPLETED'; // submitted early or on time
+                    }
+                } else if (timeStr.includes('overdue')) {
+                    taskStatus = 'OVERDUE';
+                }
+
                 const taskData = {
-                    status: assignment.status === 'Submitted for grading' ? 'COMPLETED' : 'PENDING',
+                    status: taskStatus,
                     deadline: dueDateObj,
                     url: assignment.url,
                     description: `Type: ${assignment.status}`,
