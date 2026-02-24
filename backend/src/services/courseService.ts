@@ -232,15 +232,12 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
         tasksByUrl.set(task.url, existing);
     }
 
-    // Delete duplicates: keep the task with the shortest (cleanest) title
+    // Delete duplicates: keep the NEWEST task (most recently synced = latest name from SPADA)
     for (const [url, duplicates] of tasksByUrl) {
         if (duplicates.length <= 1) continue;
 
-        // Sort: prefer shortest title (normalized), then oldest (first created)
-        duplicates.sort((a, b) => {
-            if (a.title.length !== b.title.length) return a.title.length - b.title.length;
-            return a.createdAt.getTime() - b.createdAt.getTime();
-        });
+        // Sort by ID descending: highest ID = most recently created/synced = latest name
+        duplicates.sort((a, b) => b.id - a.id);
 
         const keep = duplicates[0];
         const toDelete = duplicates.slice(1);
