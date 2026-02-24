@@ -163,11 +163,13 @@ const Dashboard = () => {
 
     const getDeadlineStatusDisplay = (task) => {
         const timeStr = (task.timeRemaining || '').toLowerCase();
-        if (timeStr.includes('overdue') && !timeStr.includes('submitted')) return <span className="text-red-500 font-bold">Overdue</span>;
-        if (timeStr.includes('late') && timeStr.includes('submitted')) return <span className="text-orange-400 font-bold">Late</span>;
-        if (timeStr.includes('submitted')) return <span className="text-green-500 font-bold">Done</span>;
+        const s = getTaskStatus(task);
 
-        // Only show date if it's a valid date
+        if (s === 'late') return <span className="text-orange-400 font-bold">Late</span>;
+        if (s === 'completed') return <span className="text-green-500 font-bold">Done</span>;
+        if (timeStr.includes('overdue')) return <span className="text-red-500 font-bold">Overdue</span>;
+
+        // Pending: show deadline date/time
         if (task.deadline) {
             return format(new Date(task.deadline), 'MMM dd, HH:mm');
         }
