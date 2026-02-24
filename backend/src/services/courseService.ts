@@ -57,7 +57,12 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     .replace(/\s+Assignment\s*$/i, '')
                     .trim();
 
-                // Strategy 1: Try to find existing task by URL (most reliable, unique per assignment)
+                // Extract SPADA assignment ID from URL for robust matching
+                // URL format: https://spada.upnyk.ac.id/mod/assign/view.php?id=764029
+                const spadaIdMatch = assignment.url?.match(/[?&]id=(\d+)/);
+                const spadaAssignId = spadaIdMatch ? spadaIdMatch[1] : null;
+
+                // Strategy 1: Find by URL (handles renamed assignments)
                 let existingTask = null;
                 if (assignment.url) {
                     existingTask = await prisma.task.findFirst({
@@ -68,7 +73,17 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     });
                 }
 
-                // Strategy 2: Try to find by normalized title
+                // Strategy 1b: Find by SPADA assignment ID in URL (more lenient URL matching)
+                if (!existingTask && spadaAssignId) {
+                    existingTask = await prisma.task.findFirst({
+                        where: {
+                            courseId: savedCourse.id,
+                            url: { contains: `id=${spadaAssignId}` }
+                        }
+                    });
+                }
+
+                // Strategy 2: Find by normalized title
                 if (!existingTask) {
                     existingTask = await prisma.task.findUnique({
                         where: {
@@ -80,7 +95,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                     });
                 }
 
-                // Strategy 3: Try to find by original title (before normalization)
+                // Strategy 3: Find by original title (before normalization)
                 if (!existingTask && normalizedTitle !== assignment.name) {
                     existingTask = await prisma.task.findUnique({
                         where: {
@@ -102,7 +117,26 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
 
                 let savedTask;
                 if (existingTask) {
-                    // Update existing task (also normalize the title)
+                    // If title changed (lecturer renamed), handle potential unique constraint conflict
+                    if (existingTask.title !== normalizedTitle) {
+                        console.log(`[CourseService] Task renamed: "${existingTask.title}" → "${normalizedTitle}"`);
+
+                        // Check if there's a conflicting task with the new title
+                        const conflicting = await prisma.task.findUnique({
+                            where: {
+                                courseId_title: {
+                                    courseId: savedCourse.id,
+                                    title: normalizedTitle
+                                }
+                            }
+                        });
+                        if (conflicting && conflicting.id !== existingTask.id) {
+                            console.log(`[CourseService] Removing conflicting task: "${conflicting.title}" (id=${conflicting.id})`);
+                            await prisma.task.delete({ where: { id: conflicting.id } });
+                        }
+                    }
+
+                    // Update existing task with new title and data
                     savedTask = await prisma.task.update({
                         where: { id: existingTask.id },
                         data: {
