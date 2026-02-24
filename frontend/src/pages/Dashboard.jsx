@@ -305,8 +305,9 @@ const Dashboard = () => {
                                                     href={task.url}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="flex w-full sm:w-auto items-center justify-center rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-medium transition-all shadow-lg shadow-blue-500/20"
+                                                    className="shrink-0 flex items-center justify-center gap-1.5 rounded-lg px-5 py-2.5 bg-primary hover:bg-blue-600 text-white text-sm font-semibold transition-all shadow-lg shadow-blue-500/20 whitespace-nowrap"
                                                 >
+                                                    <span className="material-symbols-outlined text-[16px]">open_in_new</span>
                                                     Submit Now
                                                 </a>
                                             </div>
