@@ -181,4 +181,39 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
             }
         }
     }
+
+    // Cleanup: Remove duplicate tasks across all user's courses
+    // Find tasks with same URL but different titles (leftovers from before normalization)
+    const allUserTasks = await prisma.task.findMany({
+        where: { userId, isDeleted: false },
+        orderBy: { createdAt: 'asc' }
+    });
+
+    // Group by URL
+    const tasksByUrl = new Map<string, typeof allUserTasks>();
+    for (const task of allUserTasks) {
+        if (!task.url) continue;
+        const existing = tasksByUrl.get(task.url) || [];
+        existing.push(task);
+        tasksByUrl.set(task.url, existing);
+    }
+
+    // Delete duplicates: keep the task with the shortest (cleanest) title
+    for (const [url, duplicates] of tasksByUrl) {
+        if (duplicates.length <= 1) continue;
+
+        // Sort: prefer shortest title (normalized), then oldest (first created)
+        duplicates.sort((a, b) => {
+            if (a.title.length !== b.title.length) return a.title.length - b.title.length;
+            return a.createdAt.getTime() - b.createdAt.getTime();
+        });
+
+        const keep = duplicates[0];
+        const toDelete = duplicates.slice(1);
+
+        for (const dup of toDelete) {
+            console.log(`[CourseService] Deleting duplicate task: "${dup.title}" (id=${dup.id}), keeping: "${keep.title}" (id=${keep.id})`);
+            await prisma.task.delete({ where: { id: dup.id } });
+        }
+    }
 };
