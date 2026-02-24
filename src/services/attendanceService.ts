@@ -255,6 +255,67 @@ export class AttendanceService {
             });
 
             if (!submitHref) {
+                // Before reporting NOT_AVAILABLE, check if already attended
+                const alreadyAttended = await this.page.evaluate(() => {
+                    const pageText = document.body.innerText.toLowerCase();
+
+                    // Check 1: Look for "Present" / "Hadir" status text in attendance table
+                    const statusCells = Array.from(document.querySelectorAll('td'));
+                    for (const cell of statusCells) {
+                        const text = (cell.textContent || '').trim().toLowerCase();
+                        const bgColor = window.getComputedStyle(cell).backgroundColor;
+                        // Green background or "Hadir"/"Present" text in a table cell
+                        if (text === 'hadir' || text === 'present' || text === 'p') {
+                            // Check if this cell has green styling or is in a highlighted row
+                            if (bgColor.includes('0, 128') || bgColor.includes('0, 100') ||
+                                bgColor.includes('34, 139') || bgColor.includes('40, 167') ||
+                                cell.closest('tr')?.querySelector('.text-success, .badge-success, [style*="green"]') ||
+                                cell.classList.contains('text-success') || cell.classList.contains('present')) {
+                                return true;
+                            }
+                        }
+                    }
+
+                    // Check 2: Look for green checkmarks or "Present" badges
+                    const successBadges = document.querySelectorAll('.badge-success, .text-success, .present, [class*="present"]');
+                    if (successBadges.length > 0) return true;
+
+                    // Check 3: Look for self-marking confirmation text
+                    if (pageText.includes('your attendance in this session has been recorded') ||
+                        pageText.includes('kehadiran anda pada sesi ini telah dicatat') ||
+                        pageText.includes('sudah tercatat') ||
+                        pageText.includes('already been taken') ||
+                        pageText.includes('sudah diisi')) {
+                        return true;
+                    }
+
+                    // Check 4: If we see "Hadir" / "Present" in the last/current row of an attendance table
+                    const tables = document.querySelectorAll('table');
+                    for (const table of tables) {
+                        const rows = table.querySelectorAll('tr');
+                        // Check last few rows (most recent sessions)
+                        for (let i = Math.max(1, rows.length - 3); i < rows.length; i++) {
+                            const rowText = (rows[i].textContent || '').toLowerCase();
+                            if ((rowText.includes('hadir') || rowText.includes('present')) &&
+                                !rowText.includes('tidak hadir') && !rowText.includes('absent')) {
+                                // This row shows attendance was recorded
+                                const cells = rows[i].querySelectorAll('td');
+                                for (const cell of cells) {
+                                    const t = (cell.textContent || '').trim().toLowerCase();
+                                    if (t === 'p' || t === 'hadir' || t === 'present') return true;
+                                }
+                            }
+                        }
+                    }
+
+                    return false;
+                });
+
+                if (alreadyAttended) {
+                    console.log('[Attendance] No submit button, but user is already marked as present!');
+                    return { found: true, submitted: true, message: 'Already marked as present (Hadir) - no action needed' };
+                }
+
                 return { found: false, submitted: false, message: 'Submit button not found (attendance not yet opened or already closed)' };
             }
 
