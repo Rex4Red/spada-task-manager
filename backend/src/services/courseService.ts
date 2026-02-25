@@ -191,7 +191,7 @@ export const saveCoursesToDb = async (userId: number, courses: any[]) => {
                 // Send Notification if NEW Task
                 if (!existingTask) {
                     console.log(`New task detected: ${assignment.name}. Sending notifications...`);
-                    const deadlineStr = dueDateObj ? dueDateObj.toLocaleString('id-ID') : 'No Deadline';
+                    const deadlineStr = dueDateObj ? dueDateObj.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'No Deadline';
 
                     // Telegram Notification
                     if (telegramConfig && telegramConfig.isActive && telegramConfig.chatId) {
