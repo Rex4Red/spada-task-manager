@@ -1,25 +1,23 @@
 /**
- * WhatsApp Service - HTTP-based using Fonnte.com API
- * Routes through Vercel proxy (same pattern as Telegram/Discord)
+ * WhatsApp Service - Using custom WhatsApp Bot API
+ * Direct HTTP calls to bot-whatsapp.podnet.space
  * 
- * Flow: HF Backend → Vercel Proxy → Fonnte API → WhatsApp
+ * Flow: HF Backend → Bot API → WhatsApp
  */
 
 export class WhatsAppService {
-    private proxyUrl: string;
+    private botUrl: string;
+    private apiKey: string;
 
     constructor() {
-        // Derive from TELEGRAM_PROXY_URL pattern, or use dedicated env var
-        this.proxyUrl = process.env.WHATSAPP_PROXY_URL || '';
-        if (!this.proxyUrl && process.env.TELEGRAM_PROXY_URL) {
-            this.proxyUrl = process.env.TELEGRAM_PROXY_URL.replace('/telegram-proxy', '/whatsapp-proxy');
-        }
+        this.botUrl = process.env.WHATSAPP_BOT_URL || 'https://bot-whatsapp.podnet.space';
+        this.apiKey = process.env.WHATSAPP_API_KEY || '';
 
-        console.log(`WhatsApp Service initialized (Fonnte via ${this.proxyUrl ? 'Vercel proxy' : 'direct'})`);
+        console.log(`WhatsApp Service initialized (Bot API: ${this.botUrl})`);
     }
 
     /**
-     * Send a text message via Fonnte API
+     * Send a text message via Bot API
      */
     public async sendMessage(
         phoneNumber: string,
@@ -29,147 +27,61 @@ export class WhatsAppService {
             return { success: false, error: 'Phone number not provided' };
         }
 
-        // Try proxy first, then direct
-        if (this.proxyUrl) {
-            try {
-                console.log('[WhatsApp] Sending via Vercel proxy...');
-                const result = await this.sendViaProxy({
-                    target: this.formatPhone(phoneNumber),
-                    message,
-                });
-                if (result.success) {
-                    console.log('✅ WhatsApp sent via Vercel proxy');
-                    return result;
-                }
-                console.log('[WhatsApp] Proxy failed:', result.error);
-            } catch (e: any) {
-                console.log('[WhatsApp] Proxy exception:', e.message);
-            }
+        if (!this.apiKey) {
+            return { success: false, error: 'WHATSAPP_API_KEY not set' };
         }
 
-        // Fallback: direct to Fonnte API
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
         try {
-            console.log('[WhatsApp] Trying direct Fonnte API...');
-            return await this.sendDirect({
-                target: this.formatPhone(phoneNumber),
-                message,
+            console.log(`[WhatsApp] Sending message to ${this.formatPhone(phoneNumber)}...`);
+            const response = await fetch(`${this.botUrl}/api/send`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': this.apiKey,
+                },
+                body: JSON.stringify({
+                    phone: this.formatPhone(phoneNumber),
+                    message,
+                }),
+                signal: controller.signal,
             });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log('✅ WhatsApp message sent via Bot API');
+                return { success: true };
+            } else {
+                const errorMsg = data.error || 'Bot API error';
+                console.log(`[WhatsApp] Bot API error: ${errorMsg}`);
+                return { success: false, error: errorMsg };
+            }
         } catch (e: any) {
-            return { success: false, error: `All methods failed: ${e.message}` };
+            if (e.name === 'AbortError') {
+                return { success: false, error: 'Bot API request timeout' };
+            }
+            return { success: false, error: e.message };
+        } finally {
+            clearTimeout(timeoutId);
         }
     }
 
     /**
-     * Send an image with caption via Fonnte API
+     * Send an image with caption
+     * Bot API only supports text, so we send text-only with caption
      */
     public async sendImage(
         phoneNumber: string,
-        base64Image: string,
+        _base64Image: string,
         caption: string,
         _mimetype: string = 'image/png'
     ): Promise<{ success: boolean; error?: string }> {
-        if (!phoneNumber) {
-            return { success: false, error: 'Phone number not provided' };
-        }
-
-        const payload = {
-            target: this.formatPhone(phoneNumber),
-            message: caption || '',
-            file: base64Image, // Fonnte uses 'file' field for base64 image
-            filename: 'screenshot.png',
-        };
-
-        // Try direct Fonnte API (supports image natively)
-        try {
-            console.log('[WhatsApp] Sending image via direct Fonnte API...');
-            const result = await this.sendDirect(payload);
-            if (result.success) {
-                console.log('✅ WhatsApp image sent via Fonnte API');
-                return result;
-            }
-            console.log('[WhatsApp] Direct image failed:', result.error);
-        } catch (e: any) {
-            console.log('[WhatsApp] Direct image exception:', e.message);
-        }
-
-        // Fallback: send text only
-        console.log('[WhatsApp] Falling back to text-only message');
+        // Bot API doesn't support image sending, fall back to text
+        console.log('[WhatsApp] Bot API does not support images, sending text-only');
         return await this.sendMessage(phoneNumber, caption);
-    }
-
-    /**
-     * Send via Vercel proxy
-     */
-    private async sendViaProxy(payload: any): Promise<{ success: boolean; error?: string }> {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        try {
-            const response = await fetch(this.proxyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Proxy-Secret': process.env.WHATSAPP_PROXY_SECRET || process.env.TELEGRAM_PROXY_SECRET || '',
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-            });
-
-            const data = await response.json();
-
-            if (data.ok || data.status) {
-                return { success: true };
-            } else {
-                return { success: false, error: data.error || data.reason || 'Proxy returned error' };
-            }
-        } catch (e: any) {
-            if (e.name === 'AbortError') {
-                return { success: false, error: 'Proxy request timeout' };
-            }
-            return { success: false, error: e.message };
-        } finally {
-            clearTimeout(timeoutId);
-        }
-    }
-
-    /**
-     * Send directly to Fonnte API (fallback, may not work on HF)
-     */
-    private async sendDirect(payload: any): Promise<{ success: boolean; error?: string }> {
-        const token = process.env.FONNTE_TOKEN || '';
-        if (!token) {
-            return { success: false, error: 'FONNTE_TOKEN not set' };
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
-
-        try {
-            const response = await fetch('https://api.fonnte.com/send', {
-                method: 'POST',
-                headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(payload),
-                signal: controller.signal,
-            });
-
-            const data = await response.json();
-
-            if (data.status) {
-                return { success: true };
-            } else {
-                return { success: false, error: data.reason || data.detail || 'Fonnte API error' };
-            }
-        } catch (e: any) {
-            if (e.name === 'AbortError') {
-                return { success: false, error: 'Fonnte request timeout' };
-            }
-            return { success: false, error: e.message };
-        } finally {
-            clearTimeout(timeoutId);
-        }
     }
 
     /**
@@ -188,12 +100,19 @@ export class WhatsAppService {
      * Check if service is configured
      */
     public async checkStatus(): Promise<{ ok: boolean; status?: string; error?: string }> {
-        const hasProxy = !!this.proxyUrl;
-        const hasToken = !!process.env.FONNTE_TOKEN;
-
-        if (hasProxy || hasToken) {
-            return { ok: true, status: `Fonnte (${hasProxy ? 'via proxy' : 'direct'})` };
+        if (!this.apiKey) {
+            return { ok: false, error: 'WhatsApp not configured. Set WHATSAPP_API_KEY.' };
         }
-        return { ok: false, error: 'WhatsApp not configured. Set FONNTE_TOKEN or WHATSAPP_PROXY_URL.' };
+
+        try {
+            const response = await fetch(`${this.botUrl}/api/status`);
+            const data = await response.json();
+            if (data.success && data.data?.status === 'connected') {
+                return { ok: true, status: `Bot API (${data.data.status})` };
+            }
+            return { ok: true, status: `Bot API (${data.data?.status || 'unknown'})` };
+        } catch (e: any) {
+            return { ok: false, error: `Bot API unreachable: ${e.message}` };
+        }
     }
 }
