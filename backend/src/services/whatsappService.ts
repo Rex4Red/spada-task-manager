@@ -85,6 +85,59 @@ export class WhatsAppService {
     }
 
     /**
+     * Send a message to a WhatsApp group via Bot API
+     */
+    public async sendGroupMessage(
+        groupId: string,
+        message: string
+    ): Promise<{ success: boolean; error?: string }> {
+        if (!groupId) {
+            return { success: false, error: 'Group ID not provided' };
+        }
+
+        if (!this.apiKey) {
+            return { success: false, error: 'WHATSAPP_API_KEY not set' };
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+        try {
+            console.log(`[WhatsApp] Sending group message to ${groupId}...`);
+            const response = await fetch(`${this.botUrl}/api/send-group`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': this.apiKey,
+                },
+                body: JSON.stringify({
+                    groupId,
+                    message,
+                }),
+                signal: controller.signal,
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                console.log('✅ WhatsApp group message sent via Bot API');
+                return { success: true };
+            } else {
+                const errorMsg = data.error || 'Bot API group error';
+                console.log(`[WhatsApp] Bot API group error: ${errorMsg}`);
+                return { success: false, error: errorMsg };
+            }
+        } catch (e: any) {
+            if (e.name === 'AbortError') {
+                return { success: false, error: 'Bot API request timeout' };
+            }
+            return { success: false, error: e.message };
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
+    /**
      * Format phone number - ensure it starts with country code
      */
     private formatPhone(phone: string): string {

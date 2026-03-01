@@ -1,6 +1,6 @@
 /**
  * Admin Notification Service
- * Sends WhatsApp notifications to admin when system errors occur.
+ * Sends WhatsApp notifications to admin GROUP when system errors occur.
  * Throttled to prevent spam (max 1 per error type per 5 minutes).
  */
 
@@ -16,7 +16,7 @@ const THROTTLE_MS = 5 * 60 * 1000; // 5 minutes
 export class AdminNotificationService {
 
     /**
-     * Send error notification to admin via WhatsApp
+     * Send error notification to admin WhatsApp group
      */
     static async sendErrorNotification(
         errorType: string,
@@ -40,12 +40,19 @@ export class AdminNotificationService {
                 return;
             }
 
-            // Get admin WhatsApp number
-            const waSetting = await prisma.adminSettings.findUnique({
+            // Get admin WhatsApp group ID (preferred) or phone number (fallback)
+            const groupSetting = await prisma.adminSettings.findUnique({
+                where: { key: 'admin_whatsapp_group' }
+            });
+            const phoneSetting = await prisma.adminSettings.findUnique({
                 where: { key: 'admin_whatsapp' }
             });
-            if (!waSetting?.value) {
-                console.log('[AdminNotif] No admin WhatsApp number configured');
+
+            const groupId = groupSetting?.value;
+            const phoneNumber = phoneSetting?.value;
+
+            if (!groupId && !phoneNumber) {
+                console.log('[AdminNotif] No admin WhatsApp group or phone configured');
                 return;
             }
 
@@ -62,11 +69,17 @@ export class AdminNotificationService {
                 `_Auto-notification from SPADA Task Manager_`
             ].filter(Boolean).join('\n');
 
-            // Send WhatsApp
-            const result = await whatsappService.sendMessage(waSetting.value, message);
+            // Send to group first, fallback to private chat
+            let result;
+            if (groupId) {
+                result = await whatsappService.sendGroupMessage(groupId, message);
+            } else {
+                result = await whatsappService.sendMessage(phoneNumber!, message);
+            }
+
             if (result.success) {
                 throttleMap.set(errorType, now);
-                console.log(`[AdminNotif] Sent ${errorType} alert to admin`);
+                console.log(`[AdminNotif] Sent ${errorType} alert to admin ${groupId ? 'group' : 'chat'}`);
             } else {
                 console.error(`[AdminNotif] Failed to send: ${result.error}`);
             }
@@ -76,7 +89,7 @@ export class AdminNotificationService {
     }
 
     /**
-     * Send test notification to verify setup
+     * Send test notification to verify setup (to group or phone)
      */
     static async sendTestNotification(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
         const message = [
@@ -88,6 +101,10 @@ export class AdminNotificationService {
             `_${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}_`
         ].join('\n');
 
+        // If it looks like a group ID (contains @g.us), send as group message
+        if (phoneNumber.includes('@g.us')) {
+            return await whatsappService.sendGroupMessage(phoneNumber, message);
+        }
         return await whatsappService.sendMessage(phoneNumber, message);
     }
 }
