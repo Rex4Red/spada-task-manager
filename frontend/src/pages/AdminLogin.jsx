@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
+
 const AdminLogin = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
@@ -18,7 +20,7 @@ const AdminLogin = () => {
         const result = await login(username, password);
 
         if (result.success) {
-            navigate('/admin/dashboard');
+            navigate(`${ADMIN_PATH}/dashboard`);
         } else {
             setError(result.error || 'Invalid credentials');
         }

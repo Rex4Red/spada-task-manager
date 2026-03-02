@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
 import { formatDistanceToNow, format } from 'date-fns';
 
 const AdminUserDetail = () => {
@@ -28,7 +30,7 @@ const AdminUserDetail = () => {
             if (data.success) {
                 setUser(data.data);
             } else {
-                navigate('/admin/users');
+                navigate(`${ADMIN_PATH}/users`);
             }
         } catch (err) {
             console.error('Failed to fetch user:', err);
@@ -52,7 +54,7 @@ const AdminUserDetail = () => {
             const data = await res.json();
 
             if (data.success) {
-                navigate('/admin/users');
+                navigate(`${ADMIN_PATH}/users`);
             } else {
                 alert(data.message || 'Failed to delete user');
             }
@@ -95,7 +97,7 @@ const AdminUserDetail = () => {
             <div className="flex flex-col min-h-full p-4 md:p-6 pt-16 md:pt-6">
                 {/* Header */}
                 <div className="flex items-center gap-4 mb-6">
-                    <Link to="/admin/users" className="p-2 rounded-lg hover:bg-[#21262d] text-[#9dabb9] hover:text-white transition-colors">
+                    <Link to={`${ADMIN_PATH}/users`} className="p-2 rounded-lg hover:bg-[#21262d] text-[#9dabb9] hover:text-white transition-colors">
                         <span className="material-symbols-outlined">arrow_back</span>
                     </Link>
                     <div className="flex-1">

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
 import { formatDistanceToNow } from 'date-fns';
 
 const AdminUsers = () => {
@@ -165,7 +167,7 @@ const AdminUsers = () => {
                                             <td className="px-4 py-3">
                                                 <div className="flex items-center justify-end gap-2">
                                                     <Link
-                                                        to={`/admin/users/${user.id}`}
+                                                        to={`${ADMIN_PATH}/users/${user.id}`}
                                                         className="p-2 rounded-lg hover:bg-purple-500/20 text-[#9dabb9] hover:text-purple-400 transition-colors"
                                                         title="View Details"
                                                     >

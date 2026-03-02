@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import AdminLayout from '../../components/AdminLayout';
 import { useAdminAuth } from '../../context/AdminAuthContext';
 
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
+
 const AdminDashboard = () => {
     const { token } = useAdminAuth();
     const [stats, setStats] = useState(null);
@@ -275,7 +277,7 @@ const AdminDashboard = () => {
                             <div className="bg-[#161b22] border border-[#30363d] rounded-xl p-4">
                                 <div className="flex items-center justify-between mb-4">
                                     <h2 className="text-white font-semibold">Recent Users</h2>
-                                    <Link to="/admin/users" className="text-purple-400 text-sm hover:underline">View All</Link>
+                                    <Link to={`${ADMIN_PATH}/users`} className="text-purple-400 text-sm hover:underline">View All</Link>
                                 </div>
                                 <div className="space-y-3">
                                     {recentUsers.length === 0 ? (
@@ -284,7 +286,7 @@ const AdminDashboard = () => {
                                         recentUsers.map(user => (
                                             <Link
                                                 key={user.id}
-                                                to={`/admin/users/${user.id}`}
+                                                to={`${ADMIN_PATH}/users/${user.id}`}
                                                 className="flex items-center justify-between p-3 rounded-lg hover:bg-[#21262d] transition-colors"
                                             >
                                                 <div className="flex items-center gap-3">

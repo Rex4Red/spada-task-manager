@@ -15,6 +15,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminUserDetail from './pages/admin/AdminUserDetail';
 
+// Secret admin path - configurable via env
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
+
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
@@ -40,7 +43,7 @@ const AdminPrivateRoute = ({ children }) => {
     );
   }
 
-  return admin ? children : <Navigate to="/admin/login" />;
+  return admin ? children : <Navigate to={`${ADMIN_PATH}/login`} />;
 };
 
 function AppRoutes() {
@@ -76,24 +79,24 @@ function AppRoutes() {
       } />
       <Route path="/" element={<Navigate to="/dashboard" />} />
 
-      {/* Admin Routes */}
-      <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/admin/dashboard" element={
+      {/* Admin Routes - secret path */}
+      <Route path={`${ADMIN_PATH}/login`} element={<AdminLogin />} />
+      <Route path={`${ADMIN_PATH}/dashboard`} element={
         <AdminPrivateRoute>
           <AdminDashboard />
         </AdminPrivateRoute>
       } />
-      <Route path="/admin/users" element={
+      <Route path={`${ADMIN_PATH}/users`} element={
         <AdminPrivateRoute>
           <AdminUsers />
         </AdminPrivateRoute>
       } />
-      <Route path="/admin/users/:id" element={
+      <Route path={`${ADMIN_PATH}/users/:id`} element={
         <AdminPrivateRoute>
           <AdminUserDetail />
         </AdminPrivateRoute>
       } />
-      <Route path="/admin" element={<Navigate to="/admin/dashboard" />} />
+      <Route path={ADMIN_PATH} element={<Navigate to={`${ADMIN_PATH}/dashboard`} />} />
     </Routes>
   );
 }

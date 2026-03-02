@@ -1,6 +1,8 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../context/AdminAuthContext';
 
+const ADMIN_PATH = import.meta.env.VITE_ADMIN_PATH || '/ctrl-s7x';
+
 const AdminLayout = ({ children }) => {
     const { admin, logout } = useAdminAuth();
     const location = useLocation();
@@ -10,12 +12,12 @@ const AdminLayout = ({ children }) => {
 
     const handleLogout = () => {
         logout();
-        navigate('/admin/login');
+        navigate(`${ADMIN_PATH}/login`);
     };
 
     const navItems = [
-        { path: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
-        { path: '/admin/users', icon: 'group', label: 'Users' },
+        { path: `${ADMIN_PATH}/dashboard`, icon: 'dashboard', label: 'Dashboard' },
+        { path: `${ADMIN_PATH}/users`, icon: 'group', label: 'Users' },
     ];
 
     return (
