@@ -1,0 +1,66 @@
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+
+
+> backend@1.0.0 start
+> npx prisma db push && node dist/app.js
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-ap-northeast-2.pooler.supabase.com:5432"
+
+Error: Schema engine error:
+FATAL: Circuit breaker open: Failed to retrieve database credentials
+

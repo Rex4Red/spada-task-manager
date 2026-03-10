@@ -1,0 +1,12 @@
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Found the following certs:
+  Certificate Name: spada-task-manager.my.id
+    Serial Number: 514dceb8e8bd420cfdbd58176f1c1f76f31
+    Key Type: ECDSA
+    Domains: spada-task-manager.my.id
+    Expiry Date: 2026-06-02 07:54:10+00:00 (VALID: 89 days)
+    Certificate Path: /etc/letsencrypt/live/spada-task-manager.my.id/fullchain.pem
+    Private Key Path: /etc/letsencrypt/live/spada-task-manager.my.id/privkey.pem
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

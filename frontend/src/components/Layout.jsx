@@ -90,7 +90,7 @@ const Layout = ({ children }) => {
             </aside>
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col h-full overflow-y-auto pb-20 md:pb-0">
+            <main className="flex-1 flex flex-col h-full overflow-y-auto pb-28 md:pb-0">
                 {children}
             </main>
 

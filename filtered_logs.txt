@@ -1,0 +1,188 @@
+Telegram Service initialized (using Vercel proxy)
+Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min)
+Running scheduled deadline check...
+Running scheduled auto-sync...
+[Auto-Sync] Syncing 5/12 users via API (batch starting at index 0)
+[Auto-Sync] Syncing data for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Syncing 0 saved courses for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Sync complete for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Syncing data for user: akulakilakiboss@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: akulakilakiboss@gmail.com
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Ekonomi Informatika IF-A (20252) (46709)
+[Auto-Sync] Fetching assignments for course: Sistem Pakar IF-B (20252) (50333)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-A (20252) (46239)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-C (20252) (50694)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-A (20252) (50685)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-E (20252) (50081)
+[Auto-Sync] Sync complete for user: akulakilakiboss@gmail.com
+[Auto-Sync] Syncing data for user: 123230177@student.upnyk.ac.id
+[Auto-Sync] Syncing 10 saved courses for user: 123230177@student.upnyk.ac.id
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-D (20252) (50695)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-F (20252) (50082)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-A (20252) (46239)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-B (20252) (46998)
+[Auto-Sync] Fetching assignments for course: Sistem Pakar IF-B (20252) (50333)
+[Auto-Sync] Sync complete for user: 123230177@student.upnyk.ac.id
+[Auto-Sync] Syncing data for user: ditya22005@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: ditya22005@gmail.com
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-F (20252) (50082)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-E (20252) (50696)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-E (20252) (46242)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: User Experience & User Interface IF-B (20252) (50872)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-A (20252) (46997)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Sync complete for user: ditya22005@gmail.com
+[Auto-Sync] Syncing data for user: zizzonprime@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: zizzonprime@gmail.com
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-E (20252) (50855)
+[Auto-Sync] Fetching assignments for course: Jaringan Syaraf Tiruan IF-B (20252) (47245)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-B (20252) (46240)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: User Experience & User Interface IF-B (20252) (50872)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-D (20252) (50695)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-D (20252) (50080)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Sync complete for user: zizzonprime@gmail.com
+[WhatsApp] Notification failed: WHATSAPP_API_KEY not set
+[WhatsApp] Notification failed: WHATSAPP_API_KEY not set
+[WhatsApp] Notification failed: WHATSAPP_API_KEY not set
+Running scheduled auto-sync...
+[Auto-Sync] Syncing 5/12 users via API (batch starting at index 5)
+[Auto-Sync] Syncing data for user: nigga@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: nigga@gmail.com
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-F (20252) (50082)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-E (20252) (50696)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-A (20252) (46239)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Ekonomi Informatika IF-B (20252) (46710)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-B (20252) (46998)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-B (20252) (50852)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-E (20252) (50689)
+[Auto-Sync] Sync complete for user: nigga@gmail.com
+[Auto-Sync] Syncing data for user: 123230180@student.upnyk.ac.id
+[Auto-Sync] Syncing 10 saved courses for user: 123230180@student.upnyk.ac.id
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-B (20252) (46240)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-D (20252) (50080)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: User Experience &amp; User Interface IF-B (20252) (50872)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-B (20252) (46998)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-D (20252) (50695)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Sync complete for user: 123230180@student.upnyk.ac.id
+[Auto-Sync] Syncing data for user: bap@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: bap@gmail.com
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: User Experience & User Interface IF-B (20252) (50872)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-F (20252) (50082)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-B (20252) (46240)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-B (20252) (48250)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-C (20252) (50071)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-D (20252) (50695)
+[Auto-Sync] Fetching assignments for course: Sistem Robotika IF-A (20252) (50346)
+[Auto-Sync] Sync complete for user: bap@gmail.com
+[Auto-Sync] Syncing data for user: putra@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: putra@gmail.com
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-B (20252) (50852)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-E (20252) (50696)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-A (20252) (46997)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Jaringan Syaraf Tiruan IF-B (20252) (47245)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-E (20252) (50081)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-B (20252) (46240)
+[Auto-Sync] Sync complete for user: putra@gmail.com
+[Auto-Sync] Syncing data for user: adamfwaskito@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: adamfwaskito@gmail.com
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-A (20252) (50077)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-E (20252) (50855)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-C (20252) (50687)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-C (20252) (50694)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Pengamanan Sistem Jaringan IF-A (20252) (48621)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-C (20252) (46241)
+[Auto-Sync] Fetching assignments for course: User Experience &amp; User Interface IF-B (20252) (50872)
+[Auto-Sync] Sync complete for user: adamfwaskito@gmail.com
+Running scheduled auto-sync...
+[Auto-Sync] Syncing 5/12 users via API (batch starting at index 10)
+[Auto-Sync] Syncing data for user: person12az@gmail.com
+[Auto-Sync] Syncing 11 saved courses for user: person12az@gmail.com
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-F (20252) (50074)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Praktikum Pemrograman Berorientasi Objek IF-B (20252) (49762)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-D (20252) (50688)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-C (20252) (50853)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-A (20252) (46997)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-C (20252) (46241)
+[Auto-Sync] Fetching assignments for course: Ekonomi Informatika IF-B (20252) (46710)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-B (20252) (50078)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-B (20252) (50693)
+[Auto-Sync] Sync complete for user: person12az@gmail.com
+[Auto-Sync] Syncing data for user: zephyresdeath@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: zephyresdeath@gmail.com
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-E (20252) (47115)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-B (20252) (50693)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-E (20252) (46242)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-A (20252) (46997)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-E (20252) (50073)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-C (20252) (50079)
+[Auto-Sync] Fetching assignments for course: User Experience &amp; User Interface IF-B (20252) (50872)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-C (20252) (48251)
+[Auto-Sync] Sync complete for user: zephyresdeath@gmail.com
+[Auto-Sync] Syncing data for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Syncing 0 saved courses for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Sync complete for user: 134230064@student.upnyk.ac.id
+[Auto-Sync] Syncing data for user: akulakilakiboss@gmail.com
+[Auto-Sync] Syncing 10 saved courses for user: akulakilakiboss@gmail.com
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Ekonomi Informatika IF-A (20252) (46709)
+[Auto-Sync] Fetching assignments for course: Sistem Pakar IF-B (20252) (50333)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-A (20252) (46239)
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-C (20252) (50694)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-A (20252) (50685)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-E (20252) (50081)
+[Auto-Sync] Sync complete for user: akulakilakiboss@gmail.com
+[Auto-Sync] Syncing data for user: 123230177@student.upnyk.ac.id
+[Auto-Sync] Syncing 10 saved courses for user: 123230177@student.upnyk.ac.id
+[Auto-Sync] Fetching assignments for course: Teknologi Dan Pemrograman Mobile IF-D (20252) (50695)
+[Auto-Sync] Fetching assignments for course: Metodologi Penulisan Ilmiah IF-E (20252) (48253)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi Cloud Computing IF-D (20252) (50072)
+[Auto-Sync] Fetching assignments for course: Teknologi Cloud Computing  IF-B (20252) (50686)
+[Auto-Sync] Fetching assignments for course: Praktikum Teknologi dan Pemrograman Mobile IF-F (20252) (50082)
+[Auto-Sync] Fetching assignments for course: Uji Kualitas Perangkat Lunak IF-A (20252) (50851)
+[Auto-Sync] Fetching assignments for course: Grafika Komputer dan Multimedia IF-D (20252) (47114)
+[Auto-Sync] Fetching assignments for course: Forensik Digital IF-B (20252) (46998)
+[Auto-Sync] Fetching assignments for course: Sistem Pakar IF-B (20252) (50333)
+[Auto-Sync] Fetching assignments for course: Analisis dan Desain Berorientasi Objek IF-A (20252) (46239)
+[Auto-Sync] Sync complete for user: 123230177@student.upnyk.ac.id
