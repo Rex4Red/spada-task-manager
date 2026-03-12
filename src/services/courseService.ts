@@ -224,12 +224,14 @@ _SPADA Task Manager_`;
 
                 // Send Reminder if existing task is still PENDING (not submitted) and has a deadline
                 if (existingTask && !assignment.status?.toLowerCase().includes('submitted') && dueDateObj) {
-                    // Throttle: only send once per 24 hours per task
+                    // Smart throttle: 48h if deadline > 1 day away, 24h if within 1 day (urgent)
+                    const hoursUntilDeadline = (dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60);
+                    const throttleHours = hoursUntilDeadline > 24 ? 48 : 24;
                     const lastReminder = await prisma.notification.findFirst({
                         where: {
                             taskId: savedTask.id,
                             type: 'pending_reminder',
-                            sentAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+                            sentAt: { gte: new Date(Date.now() - throttleHours * 60 * 60 * 1000) }
                         }
                     });
 

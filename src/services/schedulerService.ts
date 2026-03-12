@@ -38,8 +38,8 @@ export class SchedulerService {
             await this.checkDeadlines();
         });
 
-        // 2. Auto-Sync: Every 10 minutes
-        cron.schedule('*/10 * * * *', async () => {
+        // 2. Auto-Sync: Every 5 minutes
+        cron.schedule('*/5 * * * *', async () => {
             if (this.isAttending) {
                 console.log('[Auto-Sync] Attendance in progress, skipping sync...');
                 return;
@@ -55,7 +55,7 @@ export class SchedulerService {
             }
         });
 
-        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (10 mins), Attendance (every min)');
+        console.log('Scheduler started: Deadline Check (hourly), Auto-Sync (5 mins), Attendance (every min)');
     }
 
     /**
