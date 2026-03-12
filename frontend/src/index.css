@@ -86,6 +86,16 @@ button:focus-visible {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Bottom padding for main content on mobile to clear fixed bottom nav */
+.mobile-main-padding {
+  padding-bottom: 144px; /* h-16 nav (64px) + calendar button overshoot (24px) + gesture bar (34px) + extra safety (22px) */
+}
+@media (min-width: 768px) {
+  .mobile-main-padding {
+    padding-bottom: 0;
+  }
+}
+
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
