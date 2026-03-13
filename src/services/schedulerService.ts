@@ -38,8 +38,15 @@ export class SchedulerService {
             await this.checkDeadlines();
         });
 
-        // 2. Auto-Sync: Every 5 minutes
+        // 2. Auto-Sync: Every 5 minutes (skip during SPADA maintenance 02:00-03:00 WIB)
         cron.schedule('*/5 * * * *', async () => {
+            // SPADA maintenance window: 02:00-03:00 WIB (UTC+7)
+            const nowWIB = new Date(Date.now() + 7 * 60 * 60 * 1000);
+            const hourWIB = nowWIB.getUTCHours();
+            if (hourWIB >= 2 && hourWIB < 3) {
+                console.log('[Auto-Sync] SPADA maintenance window (02:00-03:00 WIB), skipping...');
+                return;
+            }
             if (this.isAttending) {
                 console.log('[Auto-Sync] Attendance in progress, skipping sync...');
                 return;
