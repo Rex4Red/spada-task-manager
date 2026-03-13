@@ -222,10 +222,12 @@ _SPADA Task Manager_`;
                     }
                 }
 
-                // Send Reminder if existing task is still PENDING (not submitted) and has a deadline
-                if (existingTask && !assignment.status?.toLowerCase().includes('submitted') && dueDateObj) {
+                // Send Reminder if existing task is still PENDING (not submitted)
+                // Use effectiveDeadline: customDeadline takes priority over SPADA deadline
+                const effectiveDeadline = savedTask.customDeadline ? new Date(savedTask.customDeadline) : dueDateObj;
+                if (existingTask && !assignment.status?.toLowerCase().includes('submitted') && effectiveDeadline) {
                     // Smart throttle: 48h if deadline > 1 day away, 24h if within 1 day (urgent)
-                    const hoursUntilDeadline = (dueDateObj.getTime() - Date.now()) / (1000 * 60 * 60);
+                    const hoursUntilDeadline = (effectiveDeadline.getTime() - Date.now()) / (1000 * 60 * 60);
                     const throttleHours = hoursUntilDeadline > 24 ? 48 : 24;
                     const lastReminder = await prisma.notification.findFirst({
                         where: {
@@ -236,12 +238,13 @@ _SPADA Task Manager_`;
                     });
 
                     if (!lastReminder) {
-                        const deadlineStr = dueDateObj.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
+                        const deadlineStr = effectiveDeadline.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
                         const now = new Date();
-                        const hoursLeft = Math.round((dueDateObj.getTime() - now.getTime()) / (1000 * 60 * 60));
+                        const hoursLeft = Math.round((effectiveDeadline.getTime() - now.getTime()) / (1000 * 60 * 60));
                         const timeLeftStr = hoursLeft > 24
                             ? `${Math.round(hoursLeft / 24)} hari lagi`
                             : `${hoursLeft} jam lagi`;
+                        const isCustom = !!savedTask.customDeadline;
 
                         console.log(`[CourseService] Pending task reminder: ${assignment.name} (${timeLeftStr})`);
 

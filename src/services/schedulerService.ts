@@ -445,6 +445,9 @@ export class SchedulerService {
 
     private async checkDeadlines() {
         try {
+            const now = new Date();
+            const threeDaysLater = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+
             // 1. Get users with active Telegram or Discord config
             const users = await prisma.user.findMany({
                 where: {
@@ -461,10 +464,10 @@ export class SchedulerService {
                         where: {
                             status: { not: 'COMPLETED' },
                             isDeleted: false,
-                            deadline: {
-                                gte: new Date(),
-                                lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // Next 3 days
-                            }
+                            OR: [
+                                { deadline: { gte: now, lte: threeDaysLater } },
+                                { customDeadline: { gte: now, lte: threeDaysLater } }
+                            ]
                         }
                     }
                 }
@@ -472,9 +475,11 @@ export class SchedulerService {
 
             for (const user of users) {
                 for (const task of user.tasks) {
-                    if (!task.deadline) continue;
+                    // Use customDeadline if set, otherwise SPADA deadline
+                    const effectiveDeadline = task.customDeadline ?? task.deadline;
+                    if (!effectiveDeadline) continue;
 
-                    const timeText = formatDistanceToNow(new Date(task.deadline), { addSuffix: true });
+                    const timeText = formatDistanceToNow(new Date(effectiveDeadline), { addSuffix: true });
                     const message = `⚠️ Deadline Reminder ⚠️\n\nTask: ${task.title}\nDue: ${timeText}\n\nDon't forget to submit!`;
 
                     // Send Telegram notification

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { deleteTask } from '../controllers/taskController';
+import { deleteTask, updateTaskDeadline } from '../controllers/taskController';
 import { protect } from '../middlewares/authMiddleware';
 
 const router = Router();
@@ -8,5 +8,6 @@ const router = Router();
 router.use(protect);
 
 router.delete('/:id', deleteTask);
+router.patch('/:id/deadline', updateTaskDeadline);
 
 export default router;

@@ -51,6 +51,7 @@ model Task {
   description   String?
   status        String    @default("PENDING") // PENDING, COMPLETED, OVERDUE
   deadline      DateTime?
+  customDeadline DateTime?  // User-set deadline (overrides SPADA deadline when present)
   url           String?
   courseId      Int
   course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
