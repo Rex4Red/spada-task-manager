@@ -1,0 +1,27 @@
+{
+  "project": {
+    "enabled": true,
+    "lastGenerated": "2026-03-22T05:30:18.408Z",
+    "observationCount": 12,
+    "skillCount": 0,
+    "domain": "project",
+    "triggerGlobs": [
+      "**/*"
+    ],
+    "description": "Project for spada-task-manager. ."
+  },
+  "config": {
+    "enabled": true,
+    "lastGenerated": "2026-03-22T05:30:18.409Z",
+    "observationCount": 4,
+    "skillCount": 0,
+    "domain": "config",
+    "triggerGlobs": [
+      "**/*.yaml",
+      "**/*.yml",
+      "**/*.json",
+      "**/*.toml"
+    ],
+    "description": "Config for spada-task-manager. 1 conventions."
+  }
+}
