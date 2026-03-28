@@ -1,18 +1,18 @@
 {
   "project": {
     "enabled": true,
-    "lastGenerated": "2026-03-23T03:00:46.973Z",
-    "observationCount": 13,
+    "lastGenerated": "2026-03-24T15:22:45.300Z",
+    "observationCount": 94,
     "skillCount": 0,
     "domain": "project",
     "triggerGlobs": [
       "**/*"
     ],
-    "description": "Project for spada-task-manager. ."
+    "description": "Project for spada-task-manager. 34 gotchas, 46 conventions."
   },
   "config": {
     "enabled": true,
-    "lastGenerated": "2026-03-23T03:00:46.974Z",
+    "lastGenerated": "2026-03-24T15:22:45.301Z",
     "observationCount": 4,
     "skillCount": 0,
     "domain": "config",
