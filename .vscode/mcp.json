@@ -3,7 +3,7 @@
     "brainsync": {
       "command": "node",
       "args": [
-        "c:\\Users\\LQQ\\.antigravity\\extensions\\dawoodahmad.brainsync-2.2.5-universal\\dist\\mcp-server.js",
+        "c:\\Users\\LQQ\\.antigravity\\extensions\\dawoodahmad.brainsync-2.2.6-universal\\dist\\mcp-server.js",
         "--db",
         "C:\\Users\\LQQ\\.brainsync\\spada-task-manager\\memory.db"
       ],

@@ -83,11 +83,11 @@ const deleteCourse = (req, res) => __awaiter(void 0, void 0, void 0, function* (
         return;
     }
     try {
-        const updatedCourse = yield database_1.default.course.update({
-            where: { id: courseId },
-            data: { isDeleted: true }
+        // Hard delete - this will cascade delete related tasks, notifications, and attendance schedules
+        yield database_1.default.course.delete({
+            where: { id: courseId }
         });
-        res.status(200).json({ message: 'Course deleted successfully', data: updatedCourse });
+        res.status(200).json({ message: 'Course and related tasks deleted successfully' });
     }
     catch (error) {
         console.error('Delete course error:', error);

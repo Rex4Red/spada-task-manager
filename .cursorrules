@@ -342,3 +342,6 @@ Reference these guidelines when:
 - `query(q)` — Deep search when stuck
 - `find(query)` — Full-text lookup
 > Context above IS your context. Do NOT call load() at startup.
+
+# BrainSync Intelligence (Auto-Synced)
+[BrainSync Rules](.brainsync/agent-rules.md)

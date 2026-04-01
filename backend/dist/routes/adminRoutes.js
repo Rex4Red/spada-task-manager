@@ -14,4 +14,5 @@ router.get('/users', adminAuth_1.adminAuth, adminController_1.getUsers);
 router.get('/users/:id', adminAuth_1.adminAuth, adminController_1.getUserDetail);
 router.delete('/users/:id', adminAuth_1.adminAuth, adminController_1.deleteUser);
 router.get('/activity', adminAuth_1.adminAuth, adminController_1.getRecentActivity);
+router.post('/cleanup', adminAuth_1.adminAuth, adminController_1.cleanupOrphanData);
 exports.default = router;

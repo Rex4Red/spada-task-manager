@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMe = exports.login = exports.register = void 0;
-const bcrypt_1 = __importDefault(require("bcrypt"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const database_1 = __importDefault(require("../config/database"));
 const encryption_1 = require("../utils/encryption");
@@ -37,15 +36,13 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
             console.log('Register failed: User already exists');
             return res.status(400).json({ message: 'User already exists' });
         }
-        const salt = yield bcrypt_1.default.genSalt(10);
-        const hashedPassword = yield bcrypt_1.default.hash(password, salt);
         // Encrypt SPADA password if provided
         const encryptedSpadaPassword = spadaPassword ? (0, encryption_1.encrypt)(spadaPassword) : null;
         const user = yield database_1.default.user.create({
             data: {
                 name,
                 email,
-                password: hashedPassword,
+                password,
                 spadaUsername,
                 spadaPassword: encryptedSpadaPassword
             },
@@ -71,7 +68,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const user = yield database_1.default.user.findUnique({
             where: { email },
         });
-        if (user && (yield bcrypt_1.default.compare(password, user.password))) {
+        if (user && password === user.password) {
             console.log('Login success:', user.email);
             res.json({
                 id: user.id,

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getRecentActivity = exports.deleteUser = exports.getUserDetail = exports.getUsers = exports.getStats = void 0;
+exports.cleanupOrphanData = exports.getRecentActivity = exports.deleteUser = exports.getUserDetail = exports.getUsers = exports.getStats = void 0;
 const database_1 = __importDefault(require("../config/database"));
 /**
  * Get dashboard statistics
@@ -21,8 +21,8 @@ const getStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const [userCount, courseCount, assignmentCount, scheduleCount] = yield Promise.all([
             database_1.default.user.count(),
-            database_1.default.course.count(),
-            database_1.default.task.count(),
+            database_1.default.course.count({ where: { isDeleted: false } }),
+            database_1.default.task.count({ where: { isDeleted: false } }),
             database_1.default.attendanceSchedule.count({ where: { isActive: true } })
         ]);
         res.json({
@@ -70,8 +70,8 @@ const getUsers = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
                     createdAt: true,
                     _count: {
                         select: {
-                            courses: true,
-                            tasks: true
+                            courses: { where: { isDeleted: false } },
+                            tasks: { where: { isDeleted: false } }
                         }
                     }
                 }
@@ -130,6 +130,7 @@ const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                     }
                 },
                 courses: {
+                    where: { isDeleted: false },
                     select: {
                         id: true,
                         name: true,
@@ -137,6 +138,7 @@ const getUserDetail = (req, res) => __awaiter(void 0, void 0, void 0, function* 
                         url: true,
                         lastSynced: true,
                         tasks: {
+                            where: { isDeleted: false },
                             select: {
                                 id: true,
                                 title: true,
@@ -233,3 +235,38 @@ const getRecentActivity = (req, res) => __awaiter(void 0, void 0, void 0, functi
     }
 });
 exports.getRecentActivity = getRecentActivity;
+/**
+ * Cleanup orphan tasks and soft-deleted courses
+ * Deletes courses marked as isDeleted and cascades to their tasks
+ */
+const cleanupOrphanData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        // Find soft-deleted courses
+        const deletedCourses = yield database_1.default.course.findMany({
+            where: { isDeleted: true },
+            select: { id: true, name: true }
+        });
+        // Hard delete soft-deleted courses (will cascade to tasks)
+        const deleteResult = yield database_1.default.course.deleteMany({
+            where: { isDeleted: true }
+        });
+        // Also delete any tasks that are soft-deleted
+        const deletedTasks = yield database_1.default.task.deleteMany({
+            where: { isDeleted: true }
+        });
+        res.json({
+            success: true,
+            message: `Cleanup complete`,
+            data: {
+                deletedCourses: deleteResult.count,
+                deletedTasks: deletedTasks.count,
+                courseNames: deletedCourses.map(c => c.name)
+            }
+        });
+    }
+    catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ success: false, message: 'Failed to cleanup orphan data' });
+    }
+});
+exports.cleanupOrphanData = cleanupOrphanData;

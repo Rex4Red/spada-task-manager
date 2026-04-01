@@ -1,7 +1,7 @@
 
 
 # Project Memory — spada-task-manager
-> 17 notes | Score threshold: >40
+> 100 notes | Score threshold: >40
 
 ## Safety — Never Run Destructive Commands
 
@@ -16,14 +16,9 @@
 - **ALWAYS** ask the user before running commands that modify system state, install packages, or make network requests.
 - When in doubt, **show the command first** and wait for approval.
 
-**Stack:** TypeScript/JavaScript · Express + React + Tailwind · DB: Prisma
+**Stack:** JavaScript/TypeScript · Express + React + Tailwind · DB: Prisma
 
-## 📝 NOTE: 1 uncommitted file(s) in working tree.\n\n## Active: `.`
-
-- **Project: backend — 12 deps, 12 devDeps**
-- **what-changed in .gitignore**
-
-## Verified Best Practices
+## 📝 NOTE: 1 uncommitted file(s) in working tree.\n\n## Verified Best Practices
 
 - Agent generates new migration for every change (squash related changes)
 - Agent installs packages without checking if already installed

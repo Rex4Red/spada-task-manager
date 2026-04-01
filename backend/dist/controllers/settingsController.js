@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSpadaSettings = exports.testTelegramNotification = exports.getSettings = exports.updateTelegramSettings = void 0;
+exports.testWhatsAppNotification = exports.updateWhatsAppSettings = exports.testDiscordNotification = exports.updateDiscordSettings = exports.updateSpadaSettings = exports.testTelegramNotification = exports.getSettings = exports.updateTelegramSettings = void 0;
 const database_1 = __importDefault(require("../config/database"));
 const app_1 = require("../app");
 const updateTelegramSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -48,6 +48,8 @@ const getSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             where: { id: userId },
             include: {
                 telegramConfig: true,
+                discordConfig: true,
+                whatsappConfig: true,
                 notificationSettings: true
             }
         });
@@ -60,7 +62,10 @@ const getSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
                 name: user.name,
                 email: user.email,
                 spadaUsername: user.spadaUsername,
+                hasStoredPassword: !!user.spadaPassword,
                 telegramConfig: user.telegramConfig,
+                discordConfig: user.discordConfig,
+                whatsappConfig: user.whatsappConfig,
                 notificationSettings: user.notificationSettings
             }
         });
@@ -126,3 +131,123 @@ const updateSpadaSettings = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.updateSpadaSettings = updateSpadaSettings;
+// Discord Settings
+const updateDiscordSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const { webhookUrl, isActive } = req.body;
+    if (!webhookUrl) {
+        res.status(400).json({ message: 'Webhook URL is required' });
+        return;
+    }
+    try {
+        const config = yield database_1.default.discordConfig.upsert({
+            where: { userId },
+            update: {
+                webhookUrl,
+                isActive: isActive !== null && isActive !== void 0 ? isActive : true
+            },
+            create: {
+                userId,
+                webhookUrl,
+                isActive: isActive !== null && isActive !== void 0 ? isActive : true
+            }
+        });
+        res.json({ message: 'Discord settings updated', data: config });
+    }
+    catch (error) {
+        console.error('Error updating Discord settings:', error);
+        res.status(500).json({ message: 'Failed to update Discord settings' });
+    }
+});
+exports.updateDiscordSettings = updateDiscordSettings;
+const testDiscordNotification = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const { webhookUrl: bodyWebhookUrl } = req.body || {};
+    try {
+        let targetWebhookUrl = bodyWebhookUrl;
+        if (!targetWebhookUrl) {
+            const config = yield database_1.default.discordConfig.findUnique({ where: { userId } });
+            if (!config || !config.webhookUrl) {
+                res.status(400).json({ message: 'Discord Webhook URL not provided and not configured' });
+                return;
+            }
+            targetWebhookUrl = config.webhookUrl;
+        }
+        const result = yield app_1.discordService.sendEmbed(targetWebhookUrl, {
+            title: '🔔 Test Notification',
+            description: 'This is a test message from **SPADA Task Manager**.\n\nIf you see this, your Discord integration is working! 🚀',
+            color: 0x5865F2, // Discord blurple
+            footer: { text: 'SPADA Task Manager' },
+            timestamp: new Date().toISOString()
+        });
+        if (result.success) {
+            res.json({ message: 'Test notification sent to Discord!' });
+        }
+        else {
+            res.status(500).json({ message: `Failed: ${result.error}` });
+        }
+    }
+    catch (error) {
+        console.error('Error testing Discord notification:', error);
+        res.status(500).json({ message: 'Error testing Discord notification' });
+    }
+});
+exports.testDiscordNotification = testDiscordNotification;
+// WhatsApp Settings
+const updateWhatsAppSettings = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const { phoneNumber, isActive } = req.body;
+    if (!phoneNumber) {
+        res.status(400).json({ message: 'Phone number is required' });
+        return;
+    }
+    // Normalize phone number (remove + and spaces, keep only digits)
+    const normalizedPhone = phoneNumber.replace(/[+\s-]/g, '');
+    try {
+        const config = yield database_1.default.whatsAppConfig.upsert({
+            where: { userId },
+            update: {
+                phoneNumber: normalizedPhone,
+                isActive: isActive !== null && isActive !== void 0 ? isActive : true
+            },
+            create: {
+                userId,
+                phoneNumber: normalizedPhone,
+                isActive: isActive !== null && isActive !== void 0 ? isActive : true
+            }
+        });
+        res.json({ message: 'WhatsApp settings updated', data: config });
+    }
+    catch (error) {
+        console.error('Error updating WhatsApp settings:', error);
+        res.status(500).json({ message: 'Failed to update WhatsApp settings' });
+    }
+});
+exports.updateWhatsAppSettings = updateWhatsAppSettings;
+const testWhatsAppNotification = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.user.id;
+    const { phoneNumber: bodyPhoneNumber } = req.body || {};
+    try {
+        let targetPhoneNumber = bodyPhoneNumber;
+        if (!targetPhoneNumber) {
+            const config = yield database_1.default.whatsAppConfig.findUnique({ where: { userId } });
+            if (!config || !config.phoneNumber) {
+                res.status(400).json({ message: 'WhatsApp phone number not provided and not configured' });
+                return;
+            }
+            targetPhoneNumber = config.phoneNumber;
+        }
+        const result = yield app_1.whatsappService.sendMessage(targetPhoneNumber, '🔔 *Test Notification*\n\nThis is a test message from SPADA Task Manager. If you see this, your WhatsApp integration is working! 🚀');
+        if (result.success) {
+            res.json({ message: 'Test notification sent to WhatsApp!' });
+        }
+        else {
+            res.status(500).json({ message: `Failed: ${result.error}` });
+        }
+    }
+    catch (error) {
+        console.error('Error testing WhatsApp notification:', error);
+        res.status(500).json({ message: 'Error testing WhatsApp notification' });
+    }
+});
+exports.testWhatsAppNotification = testWhatsAppNotification;

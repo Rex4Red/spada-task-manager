@@ -1,8 +1,21 @@
 # spada-task-manager — Project Memory
 
-> Auto-synced | 99 observations
+> Auto-synced | 101 observations
 
 **Stack:** JavaScript/TypeScript · Express + React + Tailwind · DB: Prisma
+
+## 🏛️ CORE ARCHITECTURE
+
+> **CRITICAL:** The following rules represent strict architectural boundaries defined by the user. NEVER violate them in your generated code or explanations.
+
+# Intellectual Property & Architecture Rules
+Write your strict architectural boundaries here. 
+BrainSync will automatically enforce these rules across all agents (Cursor, Windsurf, Cline) 
+and inject them into the memory context.
+
+Example:
+- NEVER use TailwindCSS. Only use vanilla CSS.
+- NEVER write class components. Only use functional React components.
 
 ## 🛡️ GLOBAL SAFETY RULES
 
@@ -42,4 +55,4 @@
 > ℹ️ DO NOT call get_context() or get_gotchas() at startup — context above IS your context.
 
 ---
-*Auto-synced | 2026-03-24*
+*Auto-synced | 2026-04-01*

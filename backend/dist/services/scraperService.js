@@ -29,8 +29,27 @@ class ScraperService {
                 console.log('Launching Puppeteer...');
                 this.browser = yield puppeteer_1.default.launch({
                     headless: true,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-                    defaultViewport: null
+                    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--no-zygote',
+                        '--disable-dbus',
+                        '--disable-software-rasterizer',
+                        '--disable-accelerated-2d-canvas',
+                        '--disable-gpu',
+                        '--no-first-run',
+                        '--disable-extensions',
+                        '--disable-background-networking',
+                        '--disable-default-apps',
+                        '--disable-sync',
+                        '--disable-translate',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                        '--js-flags=--max-old-space-size=256'
+                    ],
+                    defaultViewport: { width: 1280, height: 720 },
+                    timeout: 60000
                 });
                 this.page = yield this.browser.newPage();
                 // Set user agent to avoid detection (basic)
@@ -47,64 +66,96 @@ class ScraperService {
                 yield this.init();
             }
             try {
-                console.log(`Navigating to login page: ${this.baseUrl}/login/index.php`);
-                yield this.page.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'networkidle2' });
+                console.log(`[Scraper] Navigating to login page: ${this.baseUrl}/login/index.php`);
+                yield this.page.goto(`${this.baseUrl}/login/index.php`, {
+                    waitUntil: 'networkidle2',
+                    timeout: 60000
+                });
+                // Wait a bit for page to stabilize
+                yield new Promise(resolve => setTimeout(resolve, 2000));
                 // Check if already logged in by looking for logout button or dashboard element
                 const isLoggedIn = yield this.page.$('.logininfo a[href*="logout.php"]');
                 if (isLoggedIn) {
-                    console.log('Already logged in.');
+                    console.log('[Scraper] Already logged in.');
                     return true;
                 }
-                console.log('Typing credentials...');
-                yield this.page.type('#username', username);
-                yield this.page.type('#password', passwordUnencrypted);
-                console.log('Clicking login...');
+                // Check if login form exists
+                const usernameField = yield this.page.$('#username');
+                const passwordField = yield this.page.$('#password');
+                const loginBtn = yield this.page.$('#loginbtn');
+                if (!usernameField || !passwordField || !loginBtn) {
+                    console.error('[Scraper] Login form elements not found!');
+                    console.error(`Username field: ${!!usernameField}, Password field: ${!!passwordField}, Login btn: ${!!loginBtn}`);
+                    // Take screenshot for debugging
+                    const url = this.page.url();
+                    console.error(`[Scraper] Current URL: ${url}`);
+                    return false;
+                }
+                console.log('[Scraper] Typing credentials...');
+                yield this.page.type('#username', username, { delay: 50 });
+                yield this.page.type('#password', passwordUnencrypted, { delay: 50 });
+                console.log('[Scraper] Clicking login...');
                 yield Promise.all([
-                    this.page.waitForNavigation({ waitUntil: 'networkidle2' }),
+                    this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }),
                     this.page.click('#loginbtn')
                 ]);
+                // Wait for page to settle
+                yield new Promise(resolve => setTimeout(resolve, 2000));
                 // Check for login success (e.g., redirect to dashboard or existence of logout link)
                 const success = yield this.page.$('.logininfo a[href*="logout.php"]');
                 if (success) {
-                    console.log('Login successful!');
+                    console.log('[Scraper] Login successful!');
                     return true;
                 }
                 else {
-                    console.error('Login failed. Check credentials.');
+                    console.error('[Scraper] Login failed. Check credentials.');
+                    const currentUrl = this.page.url();
+                    console.error(`[Scraper] Current URL after login attempt: ${currentUrl}`);
                     // Optional: Check for error message on page
                     const errorMsg = yield this.page.$eval('.loginerrors', el => el.textContent).catch(() => null);
                     if (errorMsg)
-                        console.error(`SPADA Error: ${errorMsg}`);
+                        console.error(`[Scraper] SPADA Error: ${errorMsg}`);
                     return false;
                 }
             }
             catch (error) {
-                console.error('Error during login:', error);
+                console.error('[Scraper] Error during login:', error.message);
+                console.error('[Scraper] Full error:', error);
                 return false;
             }
         });
     }
     /**
-     * Scrape enrolled courses from the dashboard
+     * Scrape enrolled courses from the sidebar "My courses" section
      */
     scrapeCourses() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.page)
                 throw new Error('Browser not initialized or not logged in');
             try {
-                console.log('Navigating to dashboard...');
-                // Usually dashboard is the default page after login, but let's be safe
-                if (!this.page.url().includes('my')) {
-                    yield this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'networkidle2' });
-                }
-                console.log('Scraping courses...');
-                // Selector for course cards (Adjust based on SPADA/Moodle theme)
-                // Common Moodle selectors: .coursebox, .card-deck .card, .dashboard-card
+                console.log('Navigating to dashboard to scrape courses...');
+                // Navigate to dashboard first to ensure sidebar is loaded
+                yield this.page.goto(`${this.baseUrl}/my/`, { waitUntil: 'networkidle2', timeout: 30000 });
+                // Wait for sidebar to load
+                yield new Promise(r => setTimeout(r, 2000));
+                console.log('Scraping courses from sidebar...');
+                // Use the sidebar selector based on SPADA HTML structure
                 const courses = yield this.page.evaluate(() => {
-                    const courseElements = document.querySelectorAll('.course-info-container'); // Example selector
-                    const relativeUrl = window.location.origin;
-                    // Fallback for different themes
-                    // Try to find any link that looks like a course link
+                    // Primary selector: sidebar "My courses" links
+                    const sidebarLinks = document.querySelectorAll('a[data-parent-key="mycourses"]');
+                    if (sidebarLinks.length > 0) {
+                        return Array.from(sidebarLinks).map(link => {
+                            var _a, _b;
+                            const anchor = link;
+                            const mediaBody = anchor.querySelector('.media-body');
+                            return {
+                                id: anchor.getAttribute('data-key') || '',
+                                name: ((_a = mediaBody === null || mediaBody === void 0 ? void 0 : mediaBody.textContent) === null || _a === void 0 ? void 0 : _a.trim()) || ((_b = anchor.textContent) === null || _b === void 0 ? void 0 : _b.trim()) || 'Unknown Course',
+                                url: anchor.href
+                            };
+                        }).filter(c => c.id && c.url.includes('/course/view.php'));
+                    }
+                    // Fallback: try any course link pattern
                     const allLinks = Array.from(document.querySelectorAll('a[href*="/course/view.php?id="]'));
                     const uniqueCourses = new Map();
                     allLinks.forEach(link => {
@@ -112,7 +163,6 @@ class ScraperService {
                         const idMatch = href.match(/id=(\d+)/);
                         if (idMatch) {
                             const id = idMatch[1];
-                            // Try to find the closest text node or title
                             const name = link.innerText.trim() || 'Untitled Course';
                             if (name && !uniqueCourses.has(id)) {
                                 uniqueCourses.set(id, { id, name, url: href });
@@ -121,7 +171,7 @@ class ScraperService {
                     });
                     return Array.from(uniqueCourses.values());
                 });
-                console.log(`Found ${courses.length} courses.`);
+                console.log(`Found ${courses.length} courses from sidebar.`);
                 return courses;
             }
             catch (error) {
@@ -231,9 +281,21 @@ class ScraperService {
     close() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.browser) {
-                yield this.browser.close();
-                this.browser = null;
-                this.page = null;
+                try {
+                    const browserProcess = this.browser.process();
+                    yield this.browser.close().catch(() => { });
+                    // Force kill if still running
+                    if (browserProcess && !browserProcess.killed) {
+                        browserProcess.kill('SIGKILL');
+                    }
+                }
+                catch (e) {
+                    console.error('[Scraper] Error closing browser:', e);
+                }
+                finally {
+                    this.browser = null;
+                    this.page = null;
+                }
             }
         });
     }

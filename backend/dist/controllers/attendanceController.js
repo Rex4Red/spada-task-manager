@@ -130,7 +130,7 @@ exports.deleteSchedule = deleteSchedule;
  * Test attendance now (manual trigger)
  */
 const testAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const userId = req.user.id;
     const courseId = parseInt(req.params.courseId);
     try {
@@ -145,7 +145,11 @@ const testAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function*
         }
         const user = yield database_1.default.user.findUnique({
             where: { id: userId },
-            include: { telegramConfig: true }
+            include: {
+                telegramConfig: true,
+                discordConfig: true,
+                whatsappConfig: true
+            }
         });
         if (!(user === null || user === void 0 ? void 0 : user.spadaUsername) || !(user === null || user === void 0 ? void 0 : user.spadaPassword)) {
             res.status(400).json({ message: 'SPADA credentials not configured. Please set up in Settings.' });
@@ -184,6 +188,14 @@ const testAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function*
                 ? course.attendanceSchedule.customBotToken
                 : user.telegramConfig.botToken;
             yield attendanceService.sendNotification(app_1.telegramService, user.telegramConfig.chatId, botToken, course.name, result);
+        }
+        // Send Discord notification if configured
+        if (((_f = user.discordConfig) === null || _f === void 0 ? void 0 : _f.isActive) && ((_g = user.discordConfig) === null || _g === void 0 ? void 0 : _g.webhookUrl)) {
+            yield attendanceService.sendDiscordNotification(app_1.discordService, user.discordConfig.webhookUrl, course.name, result);
+        }
+        // Send WhatsApp notification if configured
+        if (((_h = user.whatsappConfig) === null || _h === void 0 ? void 0 : _h.isActive) && ((_j = user.whatsappConfig) === null || _j === void 0 ? void 0 : _j.phoneNumber)) {
+            yield attendanceService.sendWhatsAppNotification(app_1.whatsappService, user.whatsappConfig.phoneNumber, course.name, result);
         }
         res.json({
             message: result.success ? 'Attendance completed successfully!' : 'Attendance attempt completed',

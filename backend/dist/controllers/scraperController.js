@@ -41,7 +41,7 @@ const testScraping = (req, res) => __awaiter(void 0, void 0, void 0, function* (
 });
 exports.testScraping = testScraping;
 const syncCourses = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password } = req.body;
+    const { username, password } = req.body || {};
     const userId = req.user.id;
     // Use stored credentials if not provided
     let u = username;
@@ -53,7 +53,10 @@ const syncCourses = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             p = (0, encryption_1.decrypt)(user.spadaPassword);
         }
         else {
-            res.status(400).json({ message: 'Credentials required' });
+            res.status(400).json({
+                message: 'SPADA credentials not configured. Please add your username and password in Settings.',
+                code: 'CREDENTIALS_MISSING'
+            });
             return;
         }
     }
@@ -61,14 +64,25 @@ const syncCourses = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         console.log('Starting sync process...');
         const isLoggedIn = yield scraperService.login(u, p);
         if (!isLoggedIn) {
-            res.status(401).json({ message: 'Login failed' });
+            res.status(401).json({
+                message: 'Login to SPADA failed. Please check your username and password in Settings.',
+                code: 'LOGIN_FAILED'
+            });
             return;
         }
         const courses = yield scraperService.scrapeCourses();
         console.log(`Scraped ${courses.length} courses`);
+        if (courses.length === 0) {
+            yield scraperService.close();
+            res.status(200).json({
+                message: 'No courses found in your SPADA account. Make sure you are enrolled in at least one course.',
+                code: 'NO_COURSES',
+                data: []
+            });
+            return;
+        }
         const coursesWithAssignments = [];
-        const coursesToScrape = courses; // No limit
-        for (const course of coursesToScrape) {
+        for (const course of courses) {
             console.log(`Scraping assignments for course: ${course.name}`);
             const assignments = yield scraperService.scrapeAssignments(course.id);
             coursesWithAssignments.push(Object.assign(Object.assign({}, course), { assignments }));
@@ -77,14 +91,19 @@ const syncCourses = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         // Save to Database
         yield (0, courseService_1.saveCoursesToDb)(userId, coursesWithAssignments);
         res.status(200).json({
-            message: 'Sync successful & saved to database',
+            message: `Successfully synced ${coursesWithAssignments.length} courses from SPADA`,
+            code: 'SUCCESS',
             data: coursesWithAssignments
         });
     }
     catch (error) {
         console.error('Sync error:', error);
         yield scraperService.close();
-        res.status(500).json({ message: 'Sync error', error: error.message });
+        res.status(500).json({
+            message: 'Sync error: ' + error.message,
+            code: 'SYNC_ERROR',
+            error: error.message
+        });
     }
 });
 exports.syncCourses = syncCourses;

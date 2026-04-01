@@ -16,6 +16,7 @@ exports.AttendanceService = void 0;
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const discordService_1 = require("./discordService");
 class AttendanceService {
     constructor() {
         this.browser = null;
@@ -36,8 +37,29 @@ class AttendanceService {
                 console.log('[Attendance] Launching Puppeteer...');
                 this.browser = yield puppeteer_1.default.launch({
                     headless: true,
-                    args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1920,1080'],
-                    defaultViewport: { width: 1920, height: 1080 }
+                    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--disable-software-rasterizer',
+                        '--disable-extensions',
+                        '--disable-background-networking',
+                        '--disable-default-apps',
+                        '--disable-sync',
+                        '--disable-translate',
+                        '--hide-scrollbars',
+                        '--metrics-recording-only',
+                        '--mute-audio',
+                        '--no-first-run',
+                        '--safebrowsing-disable-auto-update',
+                        '--disable-features=IsolateOrigins,site-per-process',
+                        '--js-flags=--max-old-space-size=256',
+                        '--window-size=1280,720'
+                    ],
+                    defaultViewport: { width: 1280, height: 720 },
+                    timeout: 60000
                 });
                 this.page = yield this.browser.newPage();
                 yield this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
@@ -50,9 +72,21 @@ class AttendanceService {
     close() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.browser) {
-                yield this.browser.close();
-                this.browser = null;
-                this.page = null;
+                try {
+                    const browserProcess = this.browser.process();
+                    yield this.browser.close().catch(() => { });
+                    // Force kill if still running
+                    if (browserProcess && !browserProcess.killed) {
+                        browserProcess.kill('SIGKILL');
+                    }
+                }
+                catch (e) {
+                    console.error('[Attendance] Error closing browser:', e);
+                }
+                finally {
+                    this.browser = null;
+                    this.page = null;
+                }
             }
         });
     }
@@ -116,8 +150,33 @@ class AttendanceService {
             if (!this.page)
                 return false;
             try {
-                // Use page.evaluate for XPath instead of deprecated $x
-                const attendanceLinks = yield this.page.evaluate(() => {
+                // Wait for page content to load
+                yield new Promise(r => setTimeout(r, 3000));
+                // Debug: log page URL and all activity links
+                const currentUrl = this.page.url();
+                console.log(`[Attendance] Current page URL: ${currentUrl}`);
+                const debugInfo = yield this.page.evaluate(() => {
+                    // Get all links on the page for debugging
+                    const allLinks = Array.from(document.querySelectorAll('a'));
+                    const attendanceKeywords = ['attendance', 'presensi', 'kehadiran', 'hadir'];
+                    const matchingLinks = [];
+                    for (const link of allLinks) {
+                        const text = (link.textContent || '').trim().toLowerCase();
+                        if (attendanceKeywords.some(kw => text.includes(kw))) {
+                            matchingLinks.push({ text: (link.textContent || '').trim(), href: link.href });
+                        }
+                    }
+                    // Also check for mod/attendance URLs
+                    const modAttendanceLinks = allLinks
+                        .filter(a => a.href && a.href.includes('mod/attendance'))
+                        .map(a => ({ text: (a.textContent || '').trim(), href: a.href }));
+                    return { matchingLinks, modAttendanceLinks, totalLinks: allLinks.length };
+                });
+                console.log(`[Attendance] Total links on page: ${debugInfo.totalLinks}`);
+                console.log(`[Attendance] Links matching attendance keywords: ${JSON.stringify(debugInfo.matchingLinks)}`);
+                console.log(`[Attendance] Links with mod/attendance URL: ${JSON.stringify(debugInfo.modAttendanceLinks)}`);
+                // Strategy 1: Find by activity class + text (original)
+                let attendanceLinks = yield this.page.evaluate(() => {
                     const xpath = "//li[contains(@class,'activity')]//a[contains(., 'Attendance') or contains(., 'Presensi') or contains(., 'Kehadiran')]";
                     const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
                     const links = [];
@@ -128,14 +187,37 @@ class AttendanceService {
                     }
                     return links;
                 });
+                // Strategy 2: Find by mod/attendance URL pattern (more reliable)
+                if (attendanceLinks.length === 0) {
+                    console.log('[Attendance] Strategy 1 failed, trying URL pattern match...');
+                    attendanceLinks = yield this.page.evaluate(() => {
+                        const links = Array.from(document.querySelectorAll('a[href*="mod/attendance"]'));
+                        return links.map(a => a.href).filter(href => href.includes('view.php'));
+                    });
+                }
+                // Strategy 3: Find any link with attendance keywords (broadest)
+                if (attendanceLinks.length === 0) {
+                    console.log('[Attendance] Strategy 2 failed, trying broad text search...');
+                    attendanceLinks = yield this.page.evaluate(() => {
+                        const allLinks = Array.from(document.querySelectorAll('a'));
+                        const keywords = ['attendance', 'presensi', 'kehadiran'];
+                        return allLinks
+                            .filter(a => {
+                            const text = (a.textContent || '').toLowerCase();
+                            return keywords.some(kw => text.includes(kw)) && a.href;
+                        })
+                            .map(a => a.href);
+                    });
+                }
                 if (attendanceLinks.length > 0) {
-                    // Navigate to last attendance link
+                    // Navigate to last attendance link (most recent)
                     const targetUrl = attendanceLinks[attendanceLinks.length - 1];
-                    console.log('[Attendance] Found attendance link, navigating...');
+                    console.log(`[Attendance] Found ${attendanceLinks.length} attendance link(s), navigating to: ${targetUrl}`);
                     yield this.page.goto(targetUrl, { waitUntil: 'networkidle2', timeout: 30000 });
                     console.log('[Attendance] Attendance page loaded!');
                     return true;
                 }
+                console.log('[Attendance] No attendance links found on course page');
                 return false;
             }
             catch (error) {
@@ -198,10 +280,25 @@ class AttendanceService {
         return __awaiter(this, void 0, void 0, function* () {
             try {
                 yield this.init();
-                // Step 1: Login
-                const loggedIn = yield this.login(username, password);
+                // Step 1: Login with retry (frame detachment can happen under resource pressure)
+                let loggedIn = false;
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    loggedIn = yield this.login(username, password);
+                    if (loggedIn)
+                        break;
+                    if (attempt < 2) {
+                        console.log(`[Attendance] Login attempt ${attempt} failed, retrying...`);
+                        yield this.close();
+                        yield new Promise(r => setTimeout(r, 3000));
+                        yield this.init();
+                    }
+                }
                 if (!loggedIn) {
-                    const screenshot = yield this.takeScreenshot('login_failed');
+                    let screenshot;
+                    try {
+                        screenshot = yield this.takeScreenshot('login_failed');
+                    }
+                    catch (_a) { }
                     return {
                         success: false,
                         status: 'ERROR',
@@ -259,7 +356,7 @@ class AttendanceService {
                 try {
                     screenshot = yield this.takeScreenshot('fatal_error');
                 }
-                catch (_a) { }
+                catch (_b) { }
                 return {
                     success: false,
                     status: 'ERROR',
@@ -276,6 +373,95 @@ class AttendanceService {
      * Send Telegram notification with result
      */
     sendNotification(telegramService, chatId, botToken, courseName, result) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let emoji = '❓';
+            let color = discordService_1.DiscordColors.INFO;
+            switch (result.status) {
+                case 'SUCCESS':
+                    emoji = '✅';
+                    color = discordService_1.DiscordColors.SUCCESS;
+                    break;
+                case 'FAILED':
+                    emoji = '❌';
+                    color = discordService_1.DiscordColors.DANGER;
+                    break;
+                case 'NOT_AVAILABLE':
+                    emoji = 'ℹ️';
+                    color = discordService_1.DiscordColors.INFO;
+                    break;
+                case 'TIMEOUT':
+                    emoji = '⏰';
+                    color = discordService_1.DiscordColors.WARNING;
+                    break;
+                case 'ERROR':
+                    emoji = '⚠️';
+                    color = discordService_1.DiscordColors.DANGER;
+                    break;
+            }
+            const message = `${emoji} *Auto Attendance Report*\n\n` +
+                `📚 Course: ${courseName}\n` +
+                `📊 Status: ${result.status}\n` +
+                `💬 ${result.message}`;
+            // Send screenshot first if available (Telegram only)
+            if (result.screenshotPath && fs_1.default.existsSync(result.screenshotPath)) {
+                yield telegramService.sendPhoto(chatId, result.screenshotPath, botToken, `📸 Screenshot: ${courseName}`);
+            }
+            // Then send text message
+            yield telegramService.sendMessage(chatId, message, botToken);
+        });
+    }
+    /**
+     * Send Discord notification with result (includes screenshot if available)
+     */
+    sendDiscordNotification(discordService, webhookUrl, courseName, result) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let emoji = '❓';
+            let color = discordService_1.DiscordColors.INFO;
+            switch (result.status) {
+                case 'SUCCESS':
+                    emoji = '✅';
+                    color = discordService_1.DiscordColors.SUCCESS;
+                    break;
+                case 'FAILED':
+                    emoji = '❌';
+                    color = discordService_1.DiscordColors.DANGER;
+                    break;
+                case 'NOT_AVAILABLE':
+                    emoji = 'ℹ️';
+                    color = discordService_1.DiscordColors.INFO;
+                    break;
+                case 'TIMEOUT':
+                    emoji = '⏰';
+                    color = discordService_1.DiscordColors.WARNING;
+                    break;
+                case 'ERROR':
+                    emoji = '⚠️';
+                    color = discordService_1.DiscordColors.DANGER;
+                    break;
+            }
+            const embed = {
+                title: `${emoji} Auto Attendance Report`,
+                color,
+                fields: [
+                    { name: '📚 Course', value: courseName, inline: true },
+                    { name: '📊 Status', value: result.status, inline: true },
+                    { name: '💬 Message', value: result.message }
+                ],
+                timestamp: new Date().toISOString()
+            };
+            // Send with screenshot if available
+            if (result.screenshotPath && fs_1.default.existsSync(result.screenshotPath)) {
+                yield discordService.sendEmbedWithImage(webhookUrl, embed, result.screenshotPath);
+            }
+            else {
+                yield discordService.sendEmbed(webhookUrl, embed);
+            }
+        });
+    }
+    /**
+     * Send WhatsApp notification with result (includes screenshot if available)
+     */
+    sendWhatsAppNotification(whatsappService, phoneNumber, courseName, result) {
         return __awaiter(this, void 0, void 0, function* () {
             let emoji = '❓';
             switch (result.status) {
@@ -295,16 +481,37 @@ class AttendanceService {
                     emoji = '⚠️';
                     break;
             }
-            const message = `${emoji} *Auto Attendance Report*\n\n` +
-                `📚 Course: ${courseName}\n` +
-                `📊 Status: ${result.status}\n` +
-                `💬 ${result.message}`;
-            // Send screenshot first if available
+            const caption = `${emoji} *Auto Attendance Report*
+
+📚 *Course:* ${courseName}
+📊 *Status:* ${result.status}
+💬 *Message:* ${result.message}
+
+_SPADA Task Manager_`;
+            // Build screenshot URL from HF Space public host
+            let screenshotUrl = '';
             if (result.screenshotPath && fs_1.default.existsSync(result.screenshotPath)) {
-                yield telegramService.sendPhoto(chatId, result.screenshotPath, botToken, `📸 Screenshot: ${courseName}`);
+                const filename = path_1.default.basename(result.screenshotPath);
+                // HF Spaces sets SPACE_HOST env var (e.g. "username-spacename.hf.space")
+                const spaceHost = process.env.SPACE_HOST;
+                if (spaceHost) {
+                    screenshotUrl = `https://${spaceHost}/screenshots/${filename}`;
+                }
+                else {
+                    // Local dev fallback
+                    const port = process.env.PORT || 7860;
+                    screenshotUrl = `http://localhost:${port}/screenshots/${filename}`;
+                }
+                console.log('[WhatsApp] Screenshot URL:', screenshotUrl);
             }
-            // Then send text message
-            yield telegramService.sendMessage(chatId, message, botToken);
+            // Build message with screenshot link if available
+            const fullMessage = screenshotUrl
+                ? `${caption}\n\n📷 Screenshot: ${screenshotUrl}`
+                : caption;
+            const textResult = yield whatsappService.sendMessage(phoneNumber, fullMessage);
+            if (!textResult.success) {
+                console.error('[WhatsApp] Notification failed:', textResult.error);
+            }
         });
     }
 }
