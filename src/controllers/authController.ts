@@ -1,5 +1,4 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database';
 import { encrypt } from '../utils/encryption';
@@ -29,9 +28,6 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
         // Encrypt SPADA password if provided
         const encryptedSpadaPassword = spadaPassword ? encrypt(spadaPassword) : null;
 
@@ -39,7 +35,7 @@ export const register = async (req: Request, res: Response) => {
             data: {
                 name,
                 email,
-                password: hashedPassword,
+                password,
                 spadaUsername,
                 spadaPassword: encryptedSpadaPassword
             },
@@ -68,7 +64,7 @@ export const login = async (req: Request, res: Response) => {
             where: { email },
         });
 
-        if (user && (await bcrypt.compare(password, user.password))) {
+        if (user && password === user.password) {
             console.log('Login success:', user.email);
             res.json({
                 id: user.id,
