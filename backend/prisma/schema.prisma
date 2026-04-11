@@ -159,3 +159,14 @@ model AttendanceLog {
   
   schedule      AttendanceSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
 }
+
+// Password Reset OTP
+model PasswordResetOtp {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  otpHash   String   // SHA-256 hashed OTP
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  attempts  Int      @default(0) // Failed OTP verification attempts
+  createdAt DateTime @default(now())
+}
