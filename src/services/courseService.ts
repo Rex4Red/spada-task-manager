@@ -228,6 +228,13 @@ _SPADA Task Manager_`;
                 if (existingTask && !assignment.status?.toLowerCase().includes('submitted') && effectiveDeadline) {
                     // Smart throttle: 48h if deadline > 1 day away, 24h if within 1 day (urgent)
                     const hoursUntilDeadline = (effectiveDeadline.getTime() - Date.now()) / (1000 * 60 * 60);
+
+                    // Skip reminder if task is overdue by more than 100 hours (no point reminding)
+                    if (hoursUntilDeadline < -100) {
+                        console.log(`[CourseService] Skipping reminder for "${assignment.name}" — overdue by ${Math.abs(Math.round(hoursUntilDeadline))}h (>100h)`);
+                        continue;
+                    }
+
                     const throttleHours = hoursUntilDeadline > 24 ? 48 : 24;
                     const lastReminder = await prisma.notification.findFirst({
                         where: {
