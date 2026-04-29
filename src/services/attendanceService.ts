@@ -323,19 +323,118 @@ export class AttendanceService {
             console.log('[Attendance] Navigating to submit page...');
             await this.page.goto(submitHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-            // Select "Hadir" (first radio button)
-            const radioButtons = await this.page.$$('input[type="radio"]');
-            if (radioButtons.length > 0) {
-                await radioButtons[0].click();
-                console.log('[Attendance] Selected Hadir (Present)');
+            // Wait for radio buttons to be present in DOM
+            try {
+                await this.page.waitForSelector('input[type="radio"]', { timeout: 10000 });
+                console.log('[Attendance] Radio buttons found in DOM');
+            } catch {
+                console.error('[Attendance] Radio buttons not found after waiting');
+                return { found: true, submitted: false, message: 'Radio buttons not found on attendance form' };
             }
 
-            // Click Save changes button
+            // Select "Hadir" (Present) using JavaScript evaluate for reliability
+            // Puppeteer ElementHandle.click() can silently fail on hidden/custom-styled inputs
+            const radioClicked = await this.page.evaluate(() => {
+                const radios = document.querySelectorAll('input[type="radio"]');
+                if (radios.length === 0) return { success: false, reason: 'no_radios' };
+
+                const firstRadio = radios[0] as HTMLInputElement;
+
+                // Method 1: Direct property set + events
+                firstRadio.checked = true;
+                firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
+                firstRadio.dispatchEvent(new Event('click', { bubbles: true }));
+
+                // Method 2: Also try clicking the parent label if it exists
+                const label = firstRadio.closest('label') || document.querySelector(`label[for="${firstRadio.id}"]`);
+                if (label) {
+                    (label as HTMLElement).click();
+                }
+
+                // Verify it's actually checked
+                const isChecked = firstRadio.checked;
+                const radioInfo = {
+                    id: firstRadio.id,
+                    name: firstRadio.name,
+                    value: firstRadio.value,
+                    checked: isChecked,
+                    totalRadios: radios.length
+                };
+
+                return { success: isChecked, reason: isChecked ? 'selected' : 'click_failed', radioInfo };
+            });
+
+            console.log('[Attendance] Radio click result:', JSON.stringify(radioClicked));
+
+            if (!radioClicked.success) {
+                console.error('[Attendance] Failed to select Present radio button!');
+                return { found: true, submitted: false, message: `Failed to select Present: ${radioClicked.reason}` };
+            }
+
+            console.log('[Attendance] ✅ Verified: Present radio button is checked');
+
+            // Small delay to ensure form state is updated
+            await new Promise(r => setTimeout(r, 500));
+
+            // Click Save changes button with navigation wait
             const saveBtn = await this.page.$('#id_submitbutton');
             if (saveBtn) {
-                await saveBtn.click();
-                console.log('[Attendance] Clicked Save changes');
+                console.log('[Attendance] Clicking Save changes and waiting for navigation...');
+
+                // Use Promise.all to wait for navigation after click
+                try {
+                    await Promise.all([
+                        this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
+                        saveBtn.click()
+                    ]);
+                    console.log('[Attendance] Page navigated after Save click');
+                } catch (navError) {
+                    // Navigation might not happen if form validation fails
+                    console.warn('[Attendance] Navigation after save timed out or failed:', navError);
+                }
+
+                // Wait a moment for the page to settle
                 await new Promise(r => setTimeout(r, 2000));
+
+                // Verify submission by checking the result page
+                const verifyResult = await this.page.evaluate(() => {
+                    const pageText = document.body.innerText.toLowerCase();
+                    const currentUrl = window.location.href;
+
+                    // Check if we're still on the form page (submission failed)
+                    const stillOnForm = document.querySelector('#id_submitbutton') !== null;
+                    const hasRadios = document.querySelectorAll('input[type="radio"]').length > 0;
+                    const hasValidationError = pageText.includes('required') ||
+                        document.querySelector('.error, .alert-danger, .text-danger, .fdescription.required') !== null;
+
+                    // Check for success indicators
+                    const hasSuccessIndicator =
+                        pageText.includes('your attendance in this session has been recorded') ||
+                        pageText.includes('kehadiran anda pada sesi ini telah dicatat') ||
+                        pageText.includes('sudah tercatat') ||
+                        pageText.includes('changes saved') ||
+                        pageText.includes('berhasil disimpan') ||
+                        currentUrl.includes('view.php'); // Redirected back to attendance view
+
+                    return {
+                        stillOnForm: stillOnForm && hasRadios,
+                        hasValidationError,
+                        hasSuccessIndicator,
+                        currentUrl,
+                        pageTitle: document.title
+                    };
+                });
+
+                console.log('[Attendance] Verification result:', JSON.stringify(verifyResult));
+
+                if (verifyResult.stillOnForm && verifyResult.hasValidationError) {
+                    return { found: true, submitted: false, message: 'Form validation error - radio button may not have been selected properly' };
+                }
+
+                if (verifyResult.stillOnForm && !verifyResult.hasSuccessIndicator) {
+                    return { found: true, submitted: false, message: 'Still on form page after save - submission may have failed' };
+                }
+
                 return { found: true, submitted: true, message: 'Attendance submitted successfully!' };
             } else {
                 return { found: true, submitted: false, message: 'Save button not found' };
