@@ -1,18 +1,18 @@
 {
   "project": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.461Z",
-    "observationCount": 589,
+    "lastGenerated": "2026-04-29T06:13:04.962Z",
+    "observationCount": 643,
     "skillCount": 0,
     "domain": "project",
     "triggerGlobs": [
       "**/*"
     ],
-    "description": "Project for spada-task-manager. 56 gotchas, 444 conventions, 1 fixes."
+    "description": "Project for spada-task-manager. 56 gotchas, 492 conventions, 1 fixes."
   },
   "config": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.463Z",
+    "lastGenerated": "2026-04-29T06:13:04.963Z",
     "observationCount": 78,
     "skillCount": 0,
     "domain": "config",
@@ -26,7 +26,7 @@
   },
   "convention": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.464Z",
+    "lastGenerated": "2026-04-29T06:13:04.964Z",
     "observationCount": 0,
     "skillCount": 14,
     "domain": "convention",
@@ -37,7 +37,7 @@
   },
   "gotcha": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.465Z",
+    "lastGenerated": "2026-04-29T06:13:04.965Z",
     "observationCount": 0,
     "skillCount": 9,
     "domain": "gotcha",
@@ -48,7 +48,7 @@
   },
   "typescript": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.463Z",
+    "lastGenerated": "2026-04-29T06:13:04.964Z",
     "observationCount": 2,
     "skillCount": 0,
     "domain": "typescript",
@@ -60,7 +60,7 @@
   },
   "java": {
     "enabled": true,
-    "lastGenerated": "2026-04-29T04:21:17.462Z",
+    "lastGenerated": "2026-04-29T06:13:04.963Z",
     "observationCount": 2,
     "skillCount": 0,
     "domain": "java",

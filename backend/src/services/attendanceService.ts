@@ -35,6 +35,7 @@ export class AttendanceService {
             this.browser = await puppeteer.launch({
                 headless: true,
                 executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+                protocolTimeout: 60000,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
@@ -255,7 +256,7 @@ export class AttendanceService {
 
             // Navigate to submit page
             console.log('[Attendance] Navigating to submit page...');
-            await this.page.goto(submitHref, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page.goto(submitHref, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Wait for radio buttons to be present in DOM
             try {
@@ -454,7 +455,7 @@ export class AttendanceService {
                 // Use Promise.all to wait for navigation after click
                 try {
                     await Promise.all([
-                        this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }),
+                        this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
                         saveBtn.click()
                     ]);
                     console.log('[Attendance] Page navigated after Save click');
@@ -490,7 +491,7 @@ export class AttendanceService {
                         // Try submitting the form directly via JavaScript
                         try {
                             await Promise.all([
-                                this.page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 }),
+                                this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
                                 this.page.evaluate(() => {
                                     const form = document.querySelector('form') as HTMLFormElement;
                                     if (form) form.submit();
