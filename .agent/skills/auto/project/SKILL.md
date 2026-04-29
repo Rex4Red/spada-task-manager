@@ -1,6 +1,6 @@
 ---
 name: project
-description: "Project for spada-task-manager. 34 gotchas, 46 conventions."
+description: "Project for spada-task-manager. 56 gotchas, 444 conventions, 1 fixes."
 domain: project
 triggers:
   - glob: "**/*"
@@ -10,7 +10,7 @@ enabled: true
 
 # Project
 
-Auto-compiled from **95 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
+Auto-compiled from **589 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
 
 ## ⚠️ Anti-Patterns & Gotchas
 
@@ -18,6 +18,28 @@ Auto-compiled from **95 real patterns** in **spada-task-manager**. This skill is
 
 | ❌ Don't | Details |
 |----------|----------|
+| Low cohesion detected in Domain Cluster 1 | Cluster 1 (19 nodes) has a very low cohesion score (0.09). This suggests the community is a "spaghet |
+| Circular dependency: app.ts ↔ whatsapproutes.ts | Files app.ts and whatsapproutes.ts import each other, creating a circular dependency. This can cause |
+| ⚠️ GOTCHA: Strengthened types Optimized | -  + - Optimized Score - ## Recent fixes +  -  + ## Recent fixes - - Fixed null crash in Agent +  -  |
+| ⚠️ GOTCHA: Strengthened types Optimized | - - Optimized Score — parallelizes async operations for speed + - Optimized Score - - Optimized Scor |
+| ⚠️ GOTCHA: Optimized Optimized | -  + - Optimized Score — parallelizes async operations for speed - ## Recent fixes +  -  + ## Recent |
+| ⚠️ GOTCHA: Strengthened types Recent | - - Optimized Score +  - - Optimized Score + ## Recent fixes - ## Recent fixes + - Patched security  |
+| gotcha in agent-rules.md | File updated (external): .brainsync/agent-rules.md  Content summary (84 lines): # Project Intelligen |
+| ⚠️ GOTCHA: Strengthened types GOTCHA | - - ⚠️ GOTCHA: Optimized Optimized + - gotcha in shared-context.json - - ⚠️ GOTCHA: Strengthened typ |
+| ⚠️ GOTCHA: Optimized Optimized | - - Optimized Score + - Optimized Score — parallelizes async operations for speed - - Optimized Scor |
+| ⚠️ GOTCHA: Strengthened types GOTCHA | - - ⚠️ GOTCHA: Updated schema Optimized + - ⚠️ GOTCHA: Optimized Optimized - - ⚠️ GOTCHA: Optimized  |
+| ⚠️ GOTCHA: Optimized Optimized | -  + - Optimized Score - ## Recent fixes +  -  + ## Recent fixes - - Patched security issue GpwgEM + |
+| ⚠️ GOTCHA: Updated schema Optimized | -  + - Optimized Score - ## Recent fixes +  -  + ## Recent fixes - - problem-fix in shared-context.j |
+| ⚠️ GOTCHA: Optimized Optimized | -  + - Optimized Score — parallelizes async operations for speed - ## Recent fixes +  -  + ## Recent |
+| ⚠️ GOTCHA: Updated schema GOTCHA | - - ⚠️ GOTCHA: Optimized Optimized + - ⚠️ GOTCHA: Updated schema GOTCHA - - ⚠️ GOTCHA: Updated schem |
+| ⚠️ GOTCHA: Updated schema GOTCHA | - - ⚠️ GOTCHA: Optimized Optimized + - ⚠️ GOTCHA: Updated schema GOTCHA - - ⚠️ GOTCHA: Updated schem |
+| ⚠️ GOTCHA: Updated schema GOTCHA | - - ⚠️ GOTCHA: Optimized Optimized + - ⚠️ GOTCHA: Updated schema GOTCHA - - ⚠️ GOTCHA: Updated schem |
+| ⚠️ GOTCHA: Updated schema GOTCHA | - - ⚠️ GOTCHA: Updated schema GOTCHA + - ⚠️ GOTCHA: Optimized Optimized - - ⚠️ GOTCHA: Strengthened  |
+| ⚠️ GOTCHA: Optimized Optimized | -  + - Optimized Score — parallelizes async operations for speed - ## Recent fixes +  -  + ## Recent |
+| ⚠️ GOTCHA: Updated schema GOTCHA | - - ⚠️ GOTCHA: Updated schema Optimized + - ⚠️ GOTCHA: Strengthened types GOTCHA - - gotcha in share |
+| ⚠️ GOTCHA: Strengthened types GOTCHA | - - gotcha in shared-context.json + - ⚠️ GOTCHA: Updated schema Optimized - - gotcha in agent-rules. |
+| ⚠️ GOTCHA: Updated schema Optimized | -  + - Optimized Optimized - ## Recent fixes +  -  + ## Recent fixes - - problem-fix in shared-conte |
+| gotcha in agent-rules.md | File updated (external): .brainsync/agent-rules.md  Content summary (68 lines): # Project Intelligen |
 | Don't mix Tailwind with inline styles | Don't mix Tailwind with inline styles |
 | Don't store secrets in Docker images — use runtime | Don't store secrets in Docker images — use runtime injection |
 | Pin base image versions — not :latest | Pin base image versions — not :latest |
@@ -46,34 +68,36 @@ Auto-compiled from **95 real patterns** in **spada-task-manager**. This skill is
 | Use parameterized queries — never string concatena | Use parameterized queries — never string concatenation for SQL |
 | Don't store passwords in plain text — use bcrypt,  | Don't store passwords in plain text — use bcrypt, argon2, or scrypt |
 | Don't use innerHTML — use textContent or sanitized | Don't use innerHTML — use textContent or sanitized rendering |
-| Sanitize ALL user input before database queries —  | Sanitize ALL user input before database queries — prevent SQL injection |
-| Never use eval(), exec(), or Function() with user  | Never use eval(), exec(), or Function() with user input |
-| Don't hardcode API keys, passwords, database URLs, | Don't hardcode API keys, passwords, database URLs, or secrets anywhere |
-| Don't leave console.log, print(), debugger, or TOD | Don't leave console.log, print(), debugger, or TODO in production code |
-| Don't commit .env, secrets, API keys, or credentia | Don't commit .env, secrets, API keys, or credentials — add to .gitignore |
-| Never force push to main, master, or production br | Never force push to main, master, or production branches |
+
+## 🔧 Problem Playbooks
+
+### Fixed null crash in Agent
+- - Agent: don't use deprecated APIs — check library version, use current API
++ - gotcha in agent-rules.md
+- - Agent: always handle loading/error states — don't just render data
++ - Agent: don't use deprecated APIs — check library version, use current API
+- - Agent: don't generate code with "any" type — define proper TypeScript types
++ - Agent: always handle loading/error states — don't just rende
+
+**Actionable Steps:**
+1. Modified 1 files
+2. identifier: Agent
+3. identifier: APIs
+4. identifier: API
+5. identifier: TypeScript
 
 ## 📐 Conventions & Best Practices
 
 ### Project Conventions
-- 📐 **Extract repeated class patterns into components** — Extract repeated class patterns into components
-- 📐 **Use responsive prefixes consistently (sm:, md:, lg:, xl:)** — Use responsive prefixes consistently (sm:, md:, lg:, xl:)
-- 📐 **Don't use arbitrary values when a utility class exists** — Don't use arbitrary values when a utility class exists
-- 📐 **Use .dockerignore to exclude unnecessary files** — Use .dockerignore to exclude unnecessary files
-- 📐 **Use multi-stage builds to reduce image size** — Use multi-stage builds to reduce image size
-- 📐 **Use select/include to limit data fetched — avoid over-fetching** — Use select/include to limit data fetched — avoid over-fetching
-- 📐 **Use transactions for related database operations** — Use transactions for related database operations
-- 📐 **Rate limit API endpoints to prevent abuse** — Rate limit API endpoints to prevent abuse
-- 📐 **Validate request body with a schema validator (Joi, Zod)** — Validate request body with a schema validator (Joi, Zod)
-- 📐 **Use helmet for security headers** — Use helmet for security headers
-- 📐 **Use Suspense and Error Boundaries for async operations** — Use Suspense and Error Boundaries for async operations
-- 📐 **Don't prop-drill more than 2 levels — use Context or state management** — Don't prop-drill more than 2 levels — use Context or state management
-- 📐 **Use useMemo for expensive computations, useCallback for stable references** — Use useMemo for expensive computations, useCallback for stable references
-- 📐 **Enable strict mode in tsconfig.json** — Enable strict mode in tsconfig.json
-- 📐 **Prefer Array methods (map, filter, reduce) over manual loops** — Prefer Array methods (map, filter, reduce) over manual loops
-- 📐 **Use template literals for string interpolation, not concatenation** — Use template literals for string interpolation, not concatenation
-- 📐 **Use optional chaining (?.) and nullish coalescing (??) for safe access** — Use optional chaining (?.) and nullish coalescing (??) for safe access
-- 📐 **Use const by default, let when reassignment needed, never var** — Use const by default, let when reassignment needed, never var
+- 📐 **convention in .gitignore** — File updated (external): .gitignore
+
+Content summary (16 lines):
+
+AGENT.md
+CLAUDE.md
+.agent-mem/
+
+# 
 - 📐 **Version your API from day 1 (/api/v1/)** — Version your API from day 1 (/api/v1/)
 - 📐 **Use consistent response format across all endpoints** — Use consistent response format across all endpoints
 - 📐 **Implement soft delete for important data — don't hard delete without confirmation** — Implement soft delete for important data — don't hard delete without confirmation
@@ -91,30 +115,21 @@ Auto-compiled from **95 real patterns** in **spada-task-manager**. This skill is
 - 📐 **Use pagination for lists over 100 items** — Use pagination for lists over 100 items
 - 📐 **Implement retry logic for transient failures with exponential backoff** — Implement retry logic for transient failures with exponential backoff
 - 📐 **Return proper HTTP status codes — not 500 for everything** — Return proper HTTP status codes — not 500 for everything
-- 📐 **Always wrap async/await in try/catch** — Always wrap async/await in try/catch
-- 📐 **Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)** — Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)
-- 📐 **Implement rate limiting on login endpoints to prevent brute force** — Implement rate limiting on login endpoints to prevent brute force
-- 📐 **Use constants for magic numbers and strings** — Use constants for magic numbers and strings
-- 📐 **Handle edge cases: empty arrays, empty strings, null, undefined, 0, NaN** — Handle edge cases: empty arrays, empty strings, null, undefined, 0, NaN
-- 📐 **Keep functions under 50 lines and single-responsibility** — Keep functions under 50 lines and single-responsibility
-- 📐 **Remove unused imports, variables, and dead code** — Remove unused imports, variables, and dead code
-- 📐 **Always pull before push to avoid conflicts** — Always pull before push to avoid conflicts
-- 📐 **Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"** — Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"
-- 📐 **Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore** — Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore
-- 📐 **convention in .gitignore** — File updated (external): .gitignore
+- 📐 **Use .dockerignore to exclude unnecessary files** — Use .dockerignore to exclude unnecessary files
+- 📐 **Use multi-stage builds to reduce image size** — Use multi-stage builds to reduce image size
+- 📐 **Rate limit API endpoints to prevent abuse** — Rate limit API endpoints to prevent abuse
+- 📐 **Validate request body with a schema validator (Joi, Zod)** — Validate request body with a schema validator (Joi, Zod)
+- 📐 **Use helmet for security headers** — Use helmet for security headers
+- 📐 **Enable strict mode in tsconfig.json** — Enable strict mode in tsconfig.json
+- 📐 **Prefer Array methods (map, filter, reduce) over manual loops** — Prefer Array methods (map, filter, reduce) over manual loops
+- 📐 **Use template literals for string interpolation, not concatenation** — Use template literals for string interpolation, not concatenation
+- 📐 **Use optional chaining (?.) and nullish coalescing (??) for safe access** — Use optional chaining (?.) and nullish coalescing (??) for safe access
+- 📐 **Use const by default, let when reassignment needed, never var** — Use const by default, let when reassignment needed, never var
+- 📐 **Version your API from day 1 (/api/v1/)** — Version your API from day 1 (/api/v1/)
+- 📐 **Use consistent response format across all endpoints** — Use consistent response format across all endpoints
+- 📐 **Implement soft delete for important data — don't hard delete without confirmation** — Implement soft delete for important data — don't hard delete without confirmation
+- 📐 **Handle timezone correctly — store UTC, display in user's timezone** — Handle timezone correctly — store UTC, display in user's timezone
+- 📐 **Make layouts responsive from the start — mobile-first approach** — Make layouts responsive from the start — mobile-first approach
+- 📐 **Disable submit button 
 
-Content summary (9 lines):
-node_modules
-
-AGENT.md
-CLAUDE.md
-.a
-
-## 🔵 Architecture
-
-### Architecture: Full-stack (React/Next frontend + API backend)
-### Dependency: lucide-react (imported in 3 files)
-### Dependency: puppeteer (imported in 4 files)
-### Dependency: bcrypt (imported in 4 files)
----
-*Auto-generated by BrainSync 🧠 | 95 patterns | 2026-04-01*
+... [Truncated — see individual observations for full content]

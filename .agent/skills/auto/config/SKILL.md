@@ -1,6 +1,6 @@
 ---
 name: config
-description: "Config for spada-task-manager. 1 conventions."
+description: "Config for spada-task-manager. 2 gotchas, 23 conventions, 8 fixes."
 domain: config
 triggers:
   - glob: "**/*.yaml"
@@ -13,11 +13,318 @@ enabled: true
 
 # Config
 
-Auto-compiled from **4 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on config files.
+Auto-compiled from **78 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on config files.
+
+## ⚠️ Anti-Patterns & Gotchas
+
+> **CRITICAL:** These are real gotchas from this project. Ignoring them WILL cause bugs.
+
+### ❌ gotcha in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "fa95946916ff981e",
++       "ts": "2026-04-11T23:07:54.336Z",
++       "by": "LQQ",
++       "data": "Ze3R3EsQB5NoU6naQZJQ15yTPooT0W/WkBPeEW5hYHmormmJIPlZ+4NsIbuEYp+wF1x/RCrq/SKHMkmGpJn3JKy7239KXXgLnrI94
+- Modified 1 files
+
+### ❌ gotcha in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "2defaa3e217765ea",
++       "ts": "2026-04-11T18:57:54.173Z",
++       "by": "LQQ",
++       "data": "+fGUop3DnT0CDgS3x45K5BXHuTzoHJ/eyalc301AD2JfSdEzkhj+nPEOhl6PbpWwRnvHNg0J+W4Q0Wpxr9y8rnRCbMTwWwb+qBaPc
+- Modified 1 files
+
+
+## 🔧 Problem Playbooks
+
+### Patched security issue EZgYF
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "e200b16d59c3facf",
++       "ts": "2026-04-14T03:04:50.567Z",
++       "by": "LQQ",
++       "data": "bGVb+byUzWiWZZngNcIGnqBdNUPpEfIgd8Uyaoe4LnKTs4FkAJtYwXgmxWbqoqo2f6LWMrfSxI6A+3tzO46Rny4OiyQF9rvaV5wqW1ZlDCnWygjdHWQMXa8nR3+MkL2xlpbKh/2xTm+mwUKlpjqH5yRq/oyXkbbBAs1K10hjMWuc1s3ursGIlIXI13I+rMF2pmE+SgyFzr1Ey7Yh6n9kYr4yk83LnwAWieuhZJRAmeNdpQmH4tMX2Y6ma9C
+
+**Actionable Steps:**
+1. Modified 1 files
+2. identifier: LQQ
+3. identifier: EZgYF
+4. identifier: OXlqsSeZVDgZuP
+5. identifier: UCUXFW
+
+### Patched security issue VqPUX
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "ea7371c9f726794a",
++       "ts": "2026-04-12T01:27:54.459Z",
++       "by": "LQQ",
++       "data": "c/3yLf4voGGyKxVe6UA+hQOM+uz4Ktu9zX4cdxoGfbHiTCMfUXZvw20L6K5DvEsi7wq9xqOptsIWw37HJGQ56+zhhbOhaXyCgXvUkcDIsjUvcLGAYZPm2UqGkNieubCCL1SAs/4zliMRXWNAKGEMf8wejAX6L2W7TMDX8Qnnhr4FJ7YtPgvVy2P1a3wAy9WGW+KXvP32E6OUKRHDsS9vZq5TAzdG9ofrDVtAbL96Sh14lCDFdy3U38dFzdl
+
+**Actionable Steps:**
+1. Modified 1 files
+2. identifier: LQQ
+3. identifier: VqPUX
+
+### problem-fix in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "95d835ae99c4ca71",
++       "ts": "2026-04-11T23:57:54.376Z",
++       "by": "LQQ",
++       "data": "vrGim1A7TQx3RQg8ZOZLrDnXL8aSeAFUWHaaYi3ZmeDpRrbyjeu21kFaIbjLg3q5TuhZwsKLKRaTO6Ypf+OI1n9y5N4tOxIapdMZC+s46Vu1BAB9BBqki76/uaxM5mbv4mnMAIbN/8EJjL4cndMvtBmmD7MjbM7PZ+q0FSNBZAUgEXiVJReH2n4Tmh/OND9MkghHVYNa4HwJCA1QBtBgW4jrtOMRpxOWZcSRzGDl9bMsBSgAwe8iKUE8FuH
+
+**Actionable Steps:**
+1. Modified 1 files
+
+### problem-fix in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "2f2100ec7a50e843",
++       "ts": "2026-04-11T21:38:01.512Z",
++       "by": "LQQ",
++       "data": "czWaCSy4/ihRe9beyHqHZnDP6K9xTvuhR0qx479nQ84Hy8PWEp62QXOSWbdh74y3t212HDsHyi42rCTWb05q21JLcRQgjSPsag+e2J1p4VqFO6TQtz4XgMwJwpC1JencoPa+m3XPIUn/S5xwFz1+mAaSQ0KdIMng2cLWyjALwWGbqfGz71QlOmms+ZoqjeECGGuwrSc/CbGWe5VkxxG3d+zYfxR5LHkzMzZ78y7gUUp4qT96QrvUuRBlNeO
+
+**Actionable Steps:**
+1. Modified 1 files
+
+### Patched security issue PeFL
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "16a98ced4caa6a62",
++       "ts": "2026-04-11T20:27:54.221Z",
++       "by": "LQQ",
++       "data": "Ei0L+PeFL/tDlW+fqezT0u0P7f3Xl0Pzsd1sRMql1VJVJ7Qzr0BiBgtBzzTewwOamGndecUWBi8cofNBv/ZeFMCMHbuhgBEy9y1NYDGhA1F5MRNfk++GP0xi5+LMIY5odDu1FnJ8GcVpwHiepa2e7qQL3wLIUz+czqZLzQMZn2NosMgiiRNYqhgYQKWJudCZKi1pC6DRFgIchOKSytU+hVUbSrZSaKtCUl33WGyfO8+M+P5pkyc4KT5vrWA
+
+**Actionable Steps:**
+1. Modified 1 files
+2. identifier: LQQ
+3. identifier: PeFL
+4. identifier: IvSpmhN
+5. identifier: KDyvtqIaracFjkgAmzgQLZmUfIqx
+
+### problem-fix in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "92949bb79b1483ce",
++       "ts": "2026-04-11T19:27:54.202Z",
++       "by": "LQQ",
++       "data": "3Oume6wJnihiCXDPvnDuv+b2xC8THOsu2kjyd2Zte66QXSER1YZJXGcczDljnDuHM3N6GIVJwblVbUs8EGlVv5VK3LF4DM8C5k3qx03W91G5m9qaBYktG3dLZg2MTEH3YFZmtz6+F/EI3akuMBfBhGMOn1TM8ePuZ2mbfZMTZdxscDflGRIiTPctcfqCFJP5B8RX4Qff3B8rutTA0S3n6XXN/AA9mXvy9wDoK+kfXRvDJRmkfU4jXgzFfrS
+
+**Actionable Steps:**
+1. Modified 1 files
+
+### Patched security issue HTtgRJDmNIO
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "c57327d428aa46ce",
++       "ts": "2026-04-11T19:08:08.618Z",
++       "by": "LQQ",
++       "data": "T71nAIphI7T7C+7stY05dZ3242QW20J2WVWgXI7wZ3weCmkvVG1Z1RA862Gykq9MnbdVNO46mXucZGWz/LkSxtKcfv5p1PiACcR4Cn4mWjPFSMvlMmf+byYzpk3FZFM0WnrTutOq0xojfkBio3oe1lRYaIhgfAb7Bj7yhGMuryG9ph14ZHZOd9wuwEiQ+O30L4TI5zic0JCjMhSDFukgoaMk+HnFIi3HFMZO9a7eKyHLqUXqaQP+Owf3693
+
+**Actionable Steps:**
+1. Modified 1 files
+2. identifier: LQQ
+3. identifier: HTtgRJDmNIO
+4. identifier: Uxw
+5. identifier: UJLe
+
+### problem-fix in shared-context.json
+-     }
++     },
+-   ]
++     {
+- }
++       "id": "bbd04e935d09bc7a",
++       "ts": "2026-04-11T18:57:56.275Z",
++       "by": "LQQ",
++       "data": "eCd0au5YNtgHS0CCBqkquz4M4FV3lEf5UbJG6gsPRorLIgUf1p4OkEOoIEwk/aVoybt2RNefLSe8DGp8cw94BpeROhb1M9m+tFwJUOUvuw51zgjfeyNmMf6NO5Oz3LNCuk/Me1EFDKGZsMMYXg1s/8kfS+T+ui0eIFC7WuHpjtcT9Z6JEsIhHcIiqMfqZkaSYgz2R0quqYbXyQkZFWktyvONAxyIHfopejXw0Wtq2lmPJCM6RT2EyGhwb9z
+
+**Actionable Steps:**
+1. Modified 1 files
 
 ## 📐 Conventions & Best Practices
 
 ### Project Conventions
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "335307782cd3c53d",
++       "ts": "2026-04-14T03:45
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "b086befbaa7a1dec",
++       "ts": "2026-04-14T03:34
+- 📐 **Added JWT tokens authentication — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "d7ec5f2a2166ce79",
++       "ts": "2026-04-14T03:05
+- 📐 **problem-fix in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "930fb88a2b17cd3b",
++       "ts": "2026-04-14T03:05
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "9542900f0dbbad79",
++       "ts": "2026-04-14T03:04
+- 📐 **Patched security issue MrgmG — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "eae7d0e493168553",
++       "ts": "2026-04-14T03:04
+- 📐 **what-changed in shared-context.json — confirmed 4x** — File updated (external): .brainsync/shared-context.json
+
+Content summary (845 lines):
+{
+  "v": 1,
+  
+- 📐 **Strengthened types Bypass — offloads heavy computation off the main thread** — -     "version": "1.0",
++     "version": "1.1",
+-     "permissions": [
++     "description": "Bypass 
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "c1f6d496917b5f0d",
++       "ts": "2026-04-12T01:27
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "7f3ec5a2de9ec0c0",
++       "ts": "2026-04-11T23:57
+- 📐 **what-changed in shared-context.json — confirmed 4x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "03ccd236a80c9825",
++       "ts": "2026-04-11T23:08
+- 📐 **what-changed in shared-context.json — confirmed 4x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "3ddc1c8a65ef8f67",
++       "ts": "2026-04-11T21:38
+- 📐 **problem-fix in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "97d3647a8e641706",
++       "ts": "2026-04-11T21:28
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "1723251de7e82cbc",
++       "ts": "2026-04-11T21:17
+- 📐 **Patched security issue GpwgEM — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "9f381cbfca0e57f8",
++       "ts": "2026-04-11T21:17
+- 📐 **discovery in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "c8b310b58d9df319",
++       "ts": "2026-04-11T20:57
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "aef99b37ae28135f",
++       "ts": "2026-04-11T20:18
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "bc34b3de15da7f42",
++       "ts": "2026-04-11T19:47
+- 📐 **Added JWT tokens authentication — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "ba846cac8dd3ebb1",
++       "ts": "2026-04-11T19:37
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "dcc1987c93aee7e4",
++       "ts": "2026-04-11T19:18
+- 📐 **what-changed in shared-context.json — confirmed 5x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "31205b388c85606a",
++       "ts": "2026-04-11T19:08
+- 📐 **what-changed in shared-context.json — confirmed 3x** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "24c5d52c3f3ab73d",
++       "ts": "2026-04-11T18:47
 - 📐 **TypeScript strict mode enabled**
 
 ## 🔵 Architecture
@@ -27,5 +334,22 @@ Auto-compiled from **4 real patterns** in **spada-task-manager**. This skill is 
 ### Project: backend — 12 deps, 12 devDeps
 Key dependencies: @prisma/client, bcrypt, cors, date-fns, dotenv, express, form-data, helmet, jsonwebtoken, morgan
 
+## 🤔 Decisions & Trade-offs
+
+- **trade-off in shared-context.json** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "197256ac973bca86",
++       "ts": "2026-04-11T19:18
+- **trade-off in shared-context.json** — -     }
++     },
+-   ]
++     {
+- }
++       "id": "4f583afb911a5980",
++       "ts": "2026-04-11T19:18
+
 ---
-*Auto-generated by BrainSync 🧠 | 4 patterns | 2026-04-01*
+*Auto-generated by BrainSync 🧠 | 78 patterns | 2026-04-29*

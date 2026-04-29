@@ -1,19 +1,19 @@
 {
   "project": {
     "enabled": true,
-    "lastGenerated": "2026-04-01T12:17:45.290Z",
-    "observationCount": 95,
+    "lastGenerated": "2026-04-29T04:21:17.461Z",
+    "observationCount": 589,
     "skillCount": 0,
     "domain": "project",
     "triggerGlobs": [
       "**/*"
     ],
-    "description": "Project for spada-task-manager. 34 gotchas, 46 conventions."
+    "description": "Project for spada-task-manager. 56 gotchas, 444 conventions, 1 fixes."
   },
   "config": {
     "enabled": true,
-    "lastGenerated": "2026-04-01T12:17:45.291Z",
-    "observationCount": 4,
+    "lastGenerated": "2026-04-29T04:21:17.463Z",
+    "observationCount": 78,
     "skillCount": 0,
     "domain": "config",
     "triggerGlobs": [
@@ -22,6 +22,51 @@
       "**/*.json",
       "**/*.toml"
     ],
-    "description": "Config for spada-task-manager. 1 conventions."
+    "description": "Config for spada-task-manager. 2 gotchas, 23 conventions, 8 fixes."
+  },
+  "convention": {
+    "enabled": true,
+    "lastGenerated": "2026-04-29T04:21:17.464Z",
+    "observationCount": 0,
+    "skillCount": 14,
+    "domain": "convention",
+    "triggerGlobs": [
+      "**/*"
+    ],
+    "description": "Convention for spada-task-manager. ."
+  },
+  "gotcha": {
+    "enabled": true,
+    "lastGenerated": "2026-04-29T04:21:17.465Z",
+    "observationCount": 0,
+    "skillCount": 9,
+    "domain": "gotcha",
+    "triggerGlobs": [
+      "**/*"
+    ],
+    "description": "Gotcha for spada-task-manager. ."
+  },
+  "typescript": {
+    "enabled": true,
+    "lastGenerated": "2026-04-29T04:21:17.463Z",
+    "observationCount": 2,
+    "skillCount": 0,
+    "domain": "typescript",
+    "triggerGlobs": [
+      "**/*.ts",
+      "**/*.tsx"
+    ],
+    "description": "Typescript for spada-task-manager. 1 conventions, 1 fixes."
+  },
+  "java": {
+    "enabled": true,
+    "lastGenerated": "2026-04-29T04:21:17.462Z",
+    "observationCount": 2,
+    "skillCount": 0,
+    "domain": "java",
+    "triggerGlobs": [
+      "**/*.java"
+    ],
+    "description": "Java for spada-task-manager. ."
   }
 }

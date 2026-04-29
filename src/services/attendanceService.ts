@@ -238,6 +238,7 @@ export class AttendanceService {
 
     /**
      * Submit attendance (click Submit, select Hadir, save)
+     * Uses multi-strategy radio click: native click → coordinate click → full MouseEvent dispatch
      */
     private async submitAttendance(): Promise<{ found: boolean; submitted: boolean; message: string }> {
         if (!this.page) return { found: false, submitted: false, message: 'Page not initialized' };
@@ -264,9 +265,7 @@ export class AttendanceService {
                     for (const cell of statusCells) {
                         const text = (cell.textContent || '').trim().toLowerCase();
                         const bgColor = window.getComputedStyle(cell).backgroundColor;
-                        // Green background or "Hadir"/"Present" text in a table cell
                         if (text === 'hadir' || text === 'present' || text === 'p') {
-                            // Check if this cell has green styling or is in a highlighted row
                             if (bgColor.includes('0, 128') || bgColor.includes('0, 100') ||
                                 bgColor.includes('34, 139') || bgColor.includes('40, 167') ||
                                 cell.closest('tr')?.querySelector('.text-success, .badge-success, [style*="green"]') ||
@@ -293,12 +292,10 @@ export class AttendanceService {
                     const tables = document.querySelectorAll('table');
                     for (const table of tables) {
                         const rows = table.querySelectorAll('tr');
-                        // Check last few rows (most recent sessions)
                         for (let i = Math.max(1, rows.length - 3); i < rows.length; i++) {
                             const rowText = (rows[i].textContent || '').toLowerCase();
                             if ((rowText.includes('hadir') || rowText.includes('present')) &&
                                 !rowText.includes('tidak hadir') && !rowText.includes('absent')) {
-                                // This row shows attendance was recorded
                                 const cells = rows[i].querySelectorAll('td');
                                 for (const cell of cells) {
                                     const t = (cell.textContent || '').trim().toLowerCase();
@@ -332,56 +329,171 @@ export class AttendanceService {
                 return { found: true, submitted: false, message: 'Radio buttons not found on attendance form' };
             }
 
-            // Select "Hadir" (Present) using JavaScript evaluate for reliability
-            // Puppeteer ElementHandle.click() can silently fail on hidden/custom-styled inputs
-            const radioClicked = await this.page.evaluate(() => {
+            // Pre-click: Dismiss any overlays, popups, or blocking elements
+            await this.page.evaluate(() => {
+                document.querySelectorAll('.growl-animated, .moodle-dialogue-base, .notification-popup, .toast')
+                    .forEach(el => (el as HTMLElement).remove());
+                document.querySelectorAll('[class*="overlay"], [class*="modal-backdrop"], .modal-backdrop')
+                    .forEach(el => (el as HTMLElement).remove());
+                document.querySelectorAll('[class*="cookie"], [id*="cookie"]')
+                    .forEach(el => (el as HTMLElement).remove());
+            });
+            console.log('[Attendance] Cleared overlays/popups');
+
+            // Get radio button info for logging
+            const radioInfo = await this.page.evaluate(() => {
                 const radios = document.querySelectorAll('input[type="radio"]');
-                if (radios.length === 0) return { success: false, reason: 'no_radios' };
-
-                const firstRadio = radios[0] as HTMLInputElement;
-
-                // Method 1: Direct property set + events
-                firstRadio.checked = true;
-                firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
-                firstRadio.dispatchEvent(new Event('click', { bubbles: true }));
-
-                // Method 2: Also try clicking the parent label if it exists
-                const label = firstRadio.closest('label') || document.querySelector(`label[for="${firstRadio.id}"]`);
-                if (label) {
-                    (label as HTMLElement).click();
-                }
-
-                // Verify it's actually checked
-                const isChecked = firstRadio.checked;
-                const radioInfo = {
-                    id: firstRadio.id,
-                    name: firstRadio.name,
-                    value: firstRadio.value,
-                    checked: isChecked,
-                    totalRadios: radios.length
+                if (radios.length === 0) return null;
+                const first = radios[0] as HTMLInputElement;
+                return {
+                    id: first.id,
+                    name: first.name,
+                    value: first.value,
+                    totalRadios: radios.length,
+                    hasLabel: !!(first.closest('label') || document.querySelector(`label[for="${first.id}"]`))
                 };
-
-                return { success: isChecked, reason: isChecked ? 'selected' : 'click_failed', radioInfo };
             });
 
-            console.log('[Attendance] Radio click result:', JSON.stringify(radioClicked));
+            if (!radioInfo) {
+                return { found: true, submitted: false, message: 'No radio buttons found after overlay cleanup' };
+            }
+            console.log('[Attendance] Radio info:', JSON.stringify(radioInfo));
 
-            if (!radioClicked.success) {
-                console.error('[Attendance] Failed to select Present radio button!');
-                return { found: true, submitted: false, message: `Failed to select Present: ${radioClicked.reason}` };
+            // ===== MULTI-STRATEGY RADIO CLICK =====
+            let radioSelected = false;
+
+            // Strategy 1: Puppeteer native page.click() — sends REAL CDP mouse events
+            console.log('[Attendance] Strategy 1: Puppeteer native page.click()');
+            try {
+                await this.page.evaluate(() => {
+                    const radio = document.querySelector('input[type="radio"]');
+                    if (radio) radio.scrollIntoView({ block: 'center' });
+                });
+                await new Promise(r => setTimeout(r, 300));
+
+                await this.page.click('input[type="radio"]:first-of-type', { delay: 50 });
+                await new Promise(r => setTimeout(r, 500));
+
+                radioSelected = await this.page.evaluate(() => {
+                    const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                    return radio ? radio.checked : false;
+                });
+                console.log(`[Attendance] Strategy 1 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
+            } catch (e) {
+                console.warn('[Attendance] Strategy 1 failed:', e);
             }
 
-            console.log('[Attendance] ✅ Verified: Present radio button is checked');
+            // Strategy 2: Click by coordinates (bypasses element interception)
+            if (!radioSelected) {
+                console.log('[Attendance] Strategy 2: Click by coordinates');
+                try {
+                    const box = await this.page.evaluate(() => {
+                        const radio = document.querySelector('input[type="radio"]');
+                        if (!radio) return null;
+                        (radio as HTMLElement).style.opacity = '1';
+                        (radio as HTMLElement).style.position = 'relative';
+                        (radio as HTMLElement).style.zIndex = '99999';
+                        const rect = radio.getBoundingClientRect();
+                        return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2, w: rect.width, h: rect.height };
+                    });
 
-            // Small delay to ensure form state is updated
-            await new Promise(r => setTimeout(r, 500));
+                    if (box && box.w > 0 && box.h > 0) {
+                        await this.page.mouse.click(box.x, box.y, { delay: 50 });
+                        await new Promise(r => setTimeout(r, 500));
+
+                        radioSelected = await this.page.evaluate(() => {
+                            const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                            return radio ? radio.checked : false;
+                        });
+                        console.log(`[Attendance] Strategy 2 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
+                    }
+                } catch (e) {
+                    console.warn('[Attendance] Strategy 2 failed:', e);
+                }
+            }
+
+            // Strategy 3: Click the label element (if it exists)
+            if (!radioSelected) {
+                console.log('[Attendance] Strategy 3: Click label element');
+                try {
+                    const labelSelector = radioInfo.id ? `label[for="${radioInfo.id}"]` : null;
+                    if (labelSelector) {
+                        await this.page.click(labelSelector, { delay: 50 });
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+
+                    await this.page.evaluate(() => {
+                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                        if (!radio) return;
+                        const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
+                        if (label) (label as HTMLElement).click();
+                    });
+                    await new Promise(r => setTimeout(r, 500));
+
+                    radioSelected = await this.page.evaluate(() => {
+                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                        return radio ? radio.checked : false;
+                    });
+                    console.log(`[Attendance] Strategy 3 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
+                } catch (e) {
+                    console.warn('[Attendance] Strategy 3 failed:', e);
+                }
+            }
+
+            // Strategy 4: Full MouseEvent dispatch + forced checked + form manipulation
+            if (!radioSelected) {
+                console.log('[Attendance] Strategy 4: Full MouseEvent dispatch + force check');
+                try {
+                    await this.page.evaluate(() => {
+                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                        if (!radio) return;
+
+                        const eventOptions = { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1 };
+                        radio.dispatchEvent(new MouseEvent('mousedown', eventOptions));
+                        radio.dispatchEvent(new MouseEvent('mouseup', eventOptions));
+                        radio.dispatchEvent(new MouseEvent('click', eventOptions));
+
+                        radio.checked = true;
+                        radio.dispatchEvent(new Event('change', { bubbles: true }));
+                        radio.dispatchEvent(new Event('input', { bubbles: true }));
+
+                        const form = radio.closest('form');
+                        if (form) {
+                            form.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+
+                        const errorElements = document.querySelectorAll('.error, .text-danger, .fdescription.required');
+                        errorElements.forEach(el => (el as HTMLElement).style.display = 'none');
+                        radio.removeAttribute('aria-invalid');
+                        radio.removeAttribute('aria-describedby');
+                    });
+                    await new Promise(r => setTimeout(r, 500));
+
+                    radioSelected = await this.page.evaluate(() => {
+                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                        return radio ? radio.checked : false;
+                    });
+                    console.log(`[Attendance] Strategy 4 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
+                } catch (e) {
+                    console.warn('[Attendance] Strategy 4 failed:', e);
+                }
+            }
+
+            if (!radioSelected) {
+                console.error('[Attendance] ❌ All strategies failed to select radio button!');
+                return { found: true, submitted: false, message: 'All radio click strategies failed' };
+            }
+
+            console.log('[Attendance] ✅ Radio button is checked, proceeding to save');
+
+            // Extra delay to ensure Moodle's form state is synced
+            await new Promise(r => setTimeout(r, 1000));
 
             // Click Save changes button with navigation wait
             const saveBtn = await this.page.$('#id_submitbutton');
             if (saveBtn) {
                 console.log('[Attendance] Clicking Save changes and waiting for navigation...');
 
-                // Use Promise.all to wait for navigation after click
                 try {
                     await Promise.all([
                         this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
@@ -389,8 +501,45 @@ export class AttendanceService {
                     ]);
                     console.log('[Attendance] Page navigated after Save click');
                 } catch (navError) {
-                    // Navigation might not happen if form validation fails
                     console.warn('[Attendance] Navigation after save timed out or failed:', navError);
+
+                    // Check if we're still on form with validation error — retry radio click + save
+                    const stillOnForm = await this.page.evaluate(() => {
+                        return document.querySelector('#id_submitbutton') !== null &&
+                            document.querySelectorAll('input[type="radio"]').length > 0;
+                    });
+
+                    if (stillOnForm) {
+                        console.log('[Attendance] Still on form after save — retrying with forced submit');
+
+                        await this.page.evaluate(() => {
+                            const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
+                            if (radio) {
+                                radio.checked = true;
+                                radio.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+                                radio.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
+
+                            document.querySelectorAll('.error, .text-danger, .fdescription.required, [aria-invalid]').forEach(el => {
+                                (el as HTMLElement).style.display = 'none';
+                                el.removeAttribute('aria-invalid');
+                            });
+                        });
+                        await new Promise(r => setTimeout(r, 500));
+
+                        try {
+                            await Promise.all([
+                                this.page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }),
+                                this.page.evaluate(() => {
+                                    const form = document.querySelector('form') as HTMLFormElement;
+                                    if (form) form.submit();
+                                })
+                            ]);
+                            console.log('[Attendance] Form submitted via JavaScript');
+                        } catch (e2) {
+                            console.warn('[Attendance] JS form submit also failed:', e2);
+                        }
+                    }
                 }
 
                 // Wait a moment for the page to settle
@@ -401,20 +550,18 @@ export class AttendanceService {
                     const pageText = document.body.innerText.toLowerCase();
                     const currentUrl = window.location.href;
 
-                    // Check if we're still on the form page (submission failed)
                     const stillOnForm = document.querySelector('#id_submitbutton') !== null;
                     const hasRadios = document.querySelectorAll('input[type="radio"]').length > 0;
                     const hasValidationError = pageText.includes('required') ||
                         document.querySelector('.error, .alert-danger, .text-danger, .fdescription.required') !== null;
 
-                    // Check for success indicators
                     const hasSuccessIndicator =
                         pageText.includes('your attendance in this session has been recorded') ||
                         pageText.includes('kehadiran anda pada sesi ini telah dicatat') ||
                         pageText.includes('sudah tercatat') ||
                         pageText.includes('changes saved') ||
                         pageText.includes('berhasil disimpan') ||
-                        currentUrl.includes('view.php'); // Redirected back to attendance view
+                        currentUrl.includes('view.php');
 
                     return {
                         stillOnForm: stillOnForm && hasRadios,
