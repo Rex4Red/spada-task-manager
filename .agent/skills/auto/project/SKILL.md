@@ -1,6 +1,6 @@
 ---
 name: project
-description: "Project for spada-task-manager. 56 gotchas, 492 conventions, 1 fixes."
+description: "Project for spada-task-manager. 56 gotchas, 517 conventions, 1 fixes."
 domain: project
 triggers:
   - glob: "**/*"
@@ -10,7 +10,7 @@ enabled: true
 
 # Project
 
-Auto-compiled from **643 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
+Auto-compiled from **669 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
 
 ## ⚠️ Anti-Patterns & Gotchas
 
@@ -89,26 +89,15 @@ Auto-compiled from **643 real patterns** in **spada-task-manager**. This skill i
 ## 📐 Conventions & Best Practices
 
 ### Project Conventions
-- 📐 **[.windsurfrules] NEVER use TailwindCSS. Only use vanilla CSS.** — Imported from .windsurfrules
-- 📐 **[CLAUDE.md] Always add empty states ("No items yet" with call-to-action)** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Disable submit button during form submission — prevent double-submit** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Make layouts responsive from the start — mobile-first approach** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Handle timezone correctly — store UTC, display in user's timezone** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Implement soft delete for important data — don't hard delete without confirmation** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Use consistent response format across all endpoints** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] Version your API from day 1 (/api/v1/)** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] **NEVER** delete untracked files or folders blindly. Always backup or stash before bulk edits.** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] **NEVER** run `git clean -fd` or `git reset --hard` without checking `git log` and verifying commits exist.** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] NEVER write class components. Only use functional React components.** — Imported from CLAUDE.md
-- 📐 **[CLAUDE.md] NEVER use TailwindCSS. Only use vanilla CSS.** — Imported from CLAUDE.md
-- 📐 **Rate limit API endpoints to prevent abuse** — Rate limit API endpoints to prevent abuse
-- 📐 **Validate request body with a schema validator (Joi, Zod)** — Validate request body with a schema validator (Joi, Zod)
-- 📐 **Use helmet for security headers** — Use helmet for security headers
-- 📐 **Enable strict mode in tsconfig.json** — Enable strict mode in tsconfig.json
-- 📐 **Prefer Array methods (map, filter, reduce) over manual loops** — Prefer Array methods (map, filter, reduce) over manual loops
-- 📐 **Use template literals for string interpolation, not concatenation** — Use template literals for string interpolation, not concatenation
-- 📐 **Use optional chaining (?.) and nullish coalescing (??) for safe access** — Use optional chaining (?.) and nullish coalescing (??) for safe access
-- 📐 **Use const by default, let when reassignment needed, never var** — Use const by default, let when reassignment needed, never var
+- 📐 **convention in .gitignore** — File updated (external): .gitignore
+
+Content summary (16 lines):
+
+AGENT.md
+CLAUDE.md
+.agent-mem/
+
+# 
 - 📐 **Version your API from day 1 (/api/v1/)** — Version your API from day 1 (/api/v1/)
 - 📐 **Use consistent response format across all endpoints** — Use consistent response format across all endpoints
 - 📐 **Implement soft delete for important data — don't hard delete without confirmation** — Implement soft delete for important data — don't hard delete without confirmation
@@ -123,6 +112,24 @@ Auto-compiled from **643 real patterns** in **spada-task-manager**. This skill i
 - 📐 **Write tests for business logic — test behavior/output, not implementation details** — Write tests for business logic — test behavior/output, not implementation details
 - 📐 **Close resources (streams, connections, handles) when done** — Close resources (streams, connections, handles) when done
 - 📐 **Debounce user input handlers (search, resize, scroll)** — Debounce user input handlers (search, resize, scroll)
-- 📐 **Use pagination for lis
+- 📐 **Use pagination for lists over 100 items** — Use pagination for lists over 100 items
+- 📐 **Implement retry logic for transient failures with exponential backoff** — Implement retry logic for transient failures with exponential backoff
+- 📐 **Return proper HTTP status codes — not 500 for everything** — Return proper HTTP status codes — not 500 for everything
+- 📐 **Always wrap async/await in try/catch** — Always wrap async/await in try/catch
+- 📐 **Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)** — Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)
+- 📐 **Keep functions under 50 lines and single-responsibility** — Keep functions under 50 lines and single-responsibility
+- 📐 **Remove unused imports, variables, and dead code** — Remove unused imports, variables, and dead code
+- 📐 **Always pull before push to avoid conflicts** — Always pull before push to avoid conflicts
+- 📐 **Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"** — Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"
+- 📐 **Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore** — Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore
+- 📐 **[.windsurfrules] NEVER use TailwindCSS. Only use vanilla CSS.** — Imported from .windsurfrules
+- 📐 **[CLAUDE.md] Always add empty states ("No items yet" with call-to-action)** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Disable submit button during form submission — prevent double-submit** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Make layouts responsive from the start — mobile-first approach** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Handle timezone correctly — store UTC, display in user's timezone** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Implement soft delete for important data — don't hard delete without confirmation** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Use consistent response format across all endpoints** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] Version your API from day 1 (/api/v1/)** — Imported from CLAUDE.md
+- 📐 **[CLAUDE.md] **NEVER** delete untracked files or folders blind
 
 ... [Truncated — see individual observations for full content]

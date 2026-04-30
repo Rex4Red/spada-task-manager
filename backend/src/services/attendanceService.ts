@@ -35,7 +35,7 @@ export class AttendanceService {
             this.browser = await puppeteer.launch({
                 headless: true,
                 executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-                protocolTimeout: 60000,
+                protocolTimeout: 120000,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
@@ -95,7 +95,7 @@ export class AttendanceService {
 
         try {
             console.log('[Attendance] Navigating to login page...');
-            await this.page!.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page!.goto(`${this.baseUrl}/login/index.php`, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Check if already logged in
             const isLoggedIn = await this.page!.$('.logininfo a[href*="logout.php"]');
@@ -128,15 +128,24 @@ export class AttendanceService {
     }
 
     /**
-     * Take screenshot and save to file
+     * Take screenshot and save to file (non-fatal — never throws)
      */
     private async takeScreenshot(filename: string): Promise<string> {
-        if (!this.page) throw new Error('Page not initialized');
+        if (!this.page) return '';
 
         const filepath = path.join(this.screenshotDir, `${filename}_${Date.now()}.png`);
-        await this.page.screenshot({ path: filepath, fullPage: false });
-        console.log(`[Attendance] Screenshot saved: ${filepath}`);
-        return filepath;
+        try {
+            // Race screenshot against a 10s timeout to prevent protocol hangs
+            await Promise.race([
+                this.page.screenshot({ path: filepath, fullPage: false }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Screenshot timeout')), 10000))
+            ]);
+            console.log(`[Attendance] Screenshot saved: ${filepath}`);
+            return filepath;
+        } catch (e) {
+            console.warn(`[Attendance] Screenshot failed (non-fatal): ${e}`);
+            return '';
+        }
     }
 
     /**
@@ -595,12 +604,13 @@ export class AttendanceService {
 
             // Step 2: Navigate to course
             console.log(`[Attendance] Navigating to course: ${courseUrl}`);
-            await this.page!.goto(courseUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+            await this.page!.goto(courseUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
             // Step 3: Find attendance link
             const attendanceFound = await this.findAttendanceLink();
             if (!attendanceFound) {
-                const screenshot = await this.takeScreenshot('attendance_not_found');
+                let screenshot: string | undefined;
+                try { screenshot = await this.takeScreenshot('attendance_not_found'); } catch { }
                 return {
                     success: false,
                     status: 'NOT_AVAILABLE',
