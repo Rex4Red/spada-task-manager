@@ -107,8 +107,11 @@ export class SchedulerService {
                 // Run attendance attempt
                 await this.runAttendanceWithRetry(schedule, user, 1);
 
-                // Wait 10s between schedules to let Chrome fully die
-                await new Promise(r => setTimeout(r, 10000));
+                // Kill zombies AFTER every schedule to prevent memory buildup
+                await this.killZombieChrome();
+
+                // Wait 5s between schedules to let resources free up
+                await new Promise(r => setTimeout(r, 5000));
             }
         } catch (error) {
             console.error('[Attendance Scheduler] Error:', error);
