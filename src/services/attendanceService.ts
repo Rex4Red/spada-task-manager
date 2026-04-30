@@ -37,7 +37,7 @@ export class AttendanceService {
         this.browser = await puppeteer.launch({
             headless: true,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-            protocolTimeout: 120000,
+            protocolTimeout: 300000,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -156,84 +156,49 @@ export class AttendanceService {
 
     /**
      * Find and click attendance link (Attendance/Presensi/Kehadiran)
+     * Uses a SINGLE page.evaluate() to minimize CDP protocol roundtrips on slow VPS
      */
     private async findAttendanceLink(): Promise<boolean> {
         if (!this.page) return false;
 
         try {
-            // Wait for page content to load
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => setTimeout(r, 2000));
 
-            // Debug: log page URL and all activity links
             const currentUrl = this.page.url();
             console.log(`[Attendance] Current page URL: ${currentUrl}`);
 
-            const debugInfo = await this.page.evaluate(() => {
-                // Get all links on the page for debugging
+            // Single evaluate call to find attendance links (reduces CDP roundtrips)
+            const attendanceUrl = await this.page.evaluate(() => {
                 const allLinks = Array.from(document.querySelectorAll('a'));
-                const attendanceKeywords = ['attendance', 'presensi', 'kehadiran', 'hadir'];
-                const matchingLinks: { text: string; href: string }[] = [];
 
-                for (const link of allLinks) {
-                    const text = (link.textContent || '').trim().toLowerCase();
-                    if (attendanceKeywords.some(kw => text.includes(kw))) {
-                        matchingLinks.push({ text: (link.textContent || '').trim(), href: link.href });
-                    }
-                }
+                // Strategy 1: mod/attendance URL pattern (most reliable)
+                const modLinks = allLinks
+                    .filter(a => a.href && a.href.includes('mod/attendance') && a.href.includes('view.php'))
+                    .map(a => a.href);
+                if (modLinks.length > 0) return modLinks[modLinks.length - 1];
 
-                // Also check for mod/attendance URLs
-                const modAttendanceLinks = allLinks
-                    .filter(a => a.href && a.href.includes('mod/attendance'))
-                    .map(a => ({ text: (a.textContent || '').trim(), href: a.href }));
-
-                return { matchingLinks, modAttendanceLinks, totalLinks: allLinks.length };
-            });
-
-            console.log(`[Attendance] Total links on page: ${debugInfo.totalLinks}`);
-            console.log(`[Attendance] Links matching attendance keywords: ${JSON.stringify(debugInfo.matchingLinks)}`);
-            console.log(`[Attendance] Links with mod/attendance URL: ${JSON.stringify(debugInfo.modAttendanceLinks)}`);
-
-            // Strategy 1: Find by activity class + text (original)
-            let attendanceLinks = await this.page.evaluate(() => {
+                // Strategy 2: Activity class + keywords
                 const xpath = "//li[contains(@class,'activity')]//a[contains(., 'Attendance') or contains(., 'Presensi') or contains(., 'Kehadiran')]";
                 const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-                const links: string[] = [];
-                for (let i = 0; i < result.snapshotLength; i++) {
-                    const el = result.snapshotItem(i) as HTMLAnchorElement;
-                    if (el && el.href) links.push(el.href);
+                if (result.snapshotLength > 0) {
+                    const el = result.snapshotItem(result.snapshotLength - 1) as HTMLAnchorElement;
+                    if (el && el.href) return el.href;
                 }
-                return links;
+
+                // Strategy 3: Any link with attendance keywords
+                const keywords = ['attendance', 'presensi', 'kehadiran'];
+                const matched = allLinks.filter(a => {
+                    const text = (a.textContent || '').toLowerCase();
+                    return keywords.some(kw => text.includes(kw)) && a.href;
+                });
+                if (matched.length > 0) return matched[matched.length - 1].href;
+
+                return null;
             });
 
-            // Strategy 2: Find by mod/attendance URL pattern (more reliable)
-            if (attendanceLinks.length === 0) {
-                console.log('[Attendance] Strategy 1 failed, trying URL pattern match...');
-                attendanceLinks = await this.page.evaluate(() => {
-                    const links = Array.from(document.querySelectorAll('a[href*="mod/attendance"]'));
-                    return links.map(a => (a as HTMLAnchorElement).href).filter(href => href.includes('view.php'));
-                });
-            }
-
-            // Strategy 3: Find any link with attendance keywords (broadest)
-            if (attendanceLinks.length === 0) {
-                console.log('[Attendance] Strategy 2 failed, trying broad text search...');
-                attendanceLinks = await this.page.evaluate(() => {
-                    const allLinks = Array.from(document.querySelectorAll('a'));
-                    const keywords = ['attendance', 'presensi', 'kehadiran'];
-                    return allLinks
-                        .filter(a => {
-                            const text = (a.textContent || '').toLowerCase();
-                            return keywords.some(kw => text.includes(kw)) && a.href;
-                        })
-                        .map(a => a.href);
-                });
-            }
-
-            if (attendanceLinks.length > 0) {
-                // Navigate to last attendance link (most recent)
-                const targetUrl = attendanceLinks[attendanceLinks.length - 1];
-                console.log(`[Attendance] Found ${attendanceLinks.length} attendance link(s), navigating to: ${targetUrl}`);
-                await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+            if (attendanceUrl) {
+                console.log(`[Attendance] Found attendance link, navigating to: ${attendanceUrl}`);
+                await this.page.goto(attendanceUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
                 console.log('[Attendance] Attendance page loaded!');
                 return true;
             }
@@ -339,22 +304,16 @@ export class AttendanceService {
                 return { found: true, submitted: false, message: 'Radio buttons not found on attendance form' };
             }
 
-            // Pre-click: Dismiss any overlays, popups, or blocking elements
-            await this.page.evaluate(() => {
-                document.querySelectorAll('.growl-animated, .moodle-dialogue-base, .notification-popup, .toast')
-                    .forEach(el => (el as HTMLElement).remove());
-                document.querySelectorAll('[class*="overlay"], [class*="modal-backdrop"], .modal-backdrop')
-                    .forEach(el => (el as HTMLElement).remove());
-                document.querySelectorAll('[class*="cookie"], [id*="cookie"]')
-                    .forEach(el => (el as HTMLElement).remove());
-            });
-            console.log('[Attendance] Cleared overlays/popups');
-
-            // Get radio button info for logging
+            // Pre-click: Dismiss overlays + get radio info in ONE evaluate call
             const radioInfo = await this.page.evaluate(() => {
+                // Remove blocking elements
+                document.querySelectorAll('.growl-animated, .moodle-dialogue-base, .notification-popup, .toast, [class*="overlay"], [class*="modal-backdrop"], .modal-backdrop, [class*="cookie"], [id*="cookie"]')
+                    .forEach(el => (el as HTMLElement).remove());
+
                 const radios = document.querySelectorAll('input[type="radio"]');
                 if (radios.length === 0) return null;
                 const first = radios[0] as HTMLInputElement;
+                first.scrollIntoView({ block: 'center' });
                 return {
                     id: first.id,
                     name: first.name,
@@ -375,12 +334,7 @@ export class AttendanceService {
             // Strategy 1: Puppeteer native page.click() — sends REAL CDP mouse events
             console.log('[Attendance] Strategy 1: Puppeteer native page.click()');
             try {
-                await this.page.evaluate(() => {
-                    const radio = document.querySelector('input[type="radio"]');
-                    if (radio) radio.scrollIntoView({ block: 'center' });
-                });
                 await new Promise(r => setTimeout(r, 300));
-
                 await this.page.click('input[type="radio"]:first-of-type', { delay: 50 });
                 await new Promise(r => setTimeout(r, 500));
 
@@ -422,70 +376,42 @@ export class AttendanceService {
                 }
             }
 
-            // Strategy 3: Click the label element (if it exists)
+            // Strategy 3+4 combined: Label click + Full MouseEvent + force check (single evaluate)
             if (!radioSelected) {
-                console.log('[Attendance] Strategy 3: Click label element');
+                console.log('[Attendance] Strategy 3+4: Label + MouseEvent + force check');
                 try {
-                    const labelSelector = radioInfo.id ? `label[for="${radioInfo.id}"]` : null;
-                    if (labelSelector) {
-                        await this.page.click(labelSelector, { delay: 50 });
-                        await new Promise(r => setTimeout(r, 500));
-                    }
-
-                    await this.page.evaluate(() => {
-                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
-                        if (!radio) return;
-                        const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
-                        if (label) (label as HTMLElement).click();
-                    });
-                    await new Promise(r => setTimeout(r, 500));
-
                     radioSelected = await this.page.evaluate(() => {
                         const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
-                        return radio ? radio.checked : false;
-                    });
-                    console.log(`[Attendance] Strategy 3 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
-                } catch (e) {
-                    console.warn('[Attendance] Strategy 3 failed:', e);
-                }
-            }
+                        if (!radio) return false;
 
-            // Strategy 4: Full MouseEvent dispatch + forced checked + form manipulation
-            if (!radioSelected) {
-                console.log('[Attendance] Strategy 4: Full MouseEvent dispatch + force check');
-                try {
-                    await this.page.evaluate(() => {
-                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
-                        if (!radio) return;
+                        // Try label click first
+                        const label = radio.closest('label') || document.querySelector(`label[for="${radio.id}"]`);
+                        if (label) (label as HTMLElement).click();
 
-                        const eventOptions = { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1 };
-                        radio.dispatchEvent(new MouseEvent('mousedown', eventOptions));
-                        radio.dispatchEvent(new MouseEvent('mouseup', eventOptions));
-                        radio.dispatchEvent(new MouseEvent('click', eventOptions));
+                        // Full mouse event sequence
+                        const opts = { bubbles: true, cancelable: true, view: window, button: 0, buttons: 1 };
+                        radio.dispatchEvent(new MouseEvent('mousedown', opts));
+                        radio.dispatchEvent(new MouseEvent('mouseup', opts));
+                        radio.dispatchEvent(new MouseEvent('click', opts));
 
+                        // Force checked + events
                         radio.checked = true;
                         radio.dispatchEvent(new Event('change', { bubbles: true }));
                         radio.dispatchEvent(new Event('input', { bubbles: true }));
 
+                        // Clear validation errors
                         const form = radio.closest('form');
-                        if (form) {
-                            form.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-
-                        const errorElements = document.querySelectorAll('.error, .text-danger, .fdescription.required');
-                        errorElements.forEach(el => (el as HTMLElement).style.display = 'none');
+                        if (form) form.dispatchEvent(new Event('change', { bubbles: true }));
+                        document.querySelectorAll('.error, .text-danger, .fdescription.required')
+                            .forEach(el => (el as HTMLElement).style.display = 'none');
                         radio.removeAttribute('aria-invalid');
                         radio.removeAttribute('aria-describedby');
-                    });
-                    await new Promise(r => setTimeout(r, 500));
 
-                    radioSelected = await this.page.evaluate(() => {
-                        const radio = document.querySelector('input[type="radio"]') as HTMLInputElement;
-                        return radio ? radio.checked : false;
+                        return radio.checked;
                     });
-                    console.log(`[Attendance] Strategy 4 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
+                    console.log(`[Attendance] Strategy 3+4 result: ${radioSelected ? '✅ selected' : '❌ not selected'}`);
                 } catch (e) {
-                    console.warn('[Attendance] Strategy 4 failed:', e);
+                    console.warn('[Attendance] Strategy 3+4 failed:', e);
                 }
             }
 
