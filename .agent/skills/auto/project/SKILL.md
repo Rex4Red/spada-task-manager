@@ -10,7 +10,7 @@ enabled: true
 
 # Project
 
-Auto-compiled from **719 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
+Auto-compiled from **721 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
 
 ## ⚠️ Anti-Patterns & Gotchas
 

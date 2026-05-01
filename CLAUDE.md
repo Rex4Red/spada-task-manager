@@ -1,6 +1,6 @@
 # spada-task-manager — Project Memory
 
-> Auto-synced | 805 observations
+> Auto-synced | 875 observations
 
 ## 🏛️ CORE ARCHITECTURE
 
@@ -53,4 +53,4 @@ Example:
 > ℹ️ DO NOT call sys_core_14() or sys_core_08() at startup — context above IS your context.
 
 ---
-*Auto-synced | 2026-04-30*
+*Auto-synced | 2026-05-01*

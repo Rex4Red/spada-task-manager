@@ -1,7 +1,7 @@
 
 
 # Project Memory — spada-task-manager
-> 287 notes | Score threshold: >40
+> 292 notes | Score threshold: >40
 
 ## Safety — Never Run Destructive Commands
 
@@ -18,21 +18,16 @@
 
 **Stack:** JavaScript/TypeScript · Express + React + Tailwind · DB: Prisma
 
-## 📝 NOTE: 1 uncommitted file(s) in working tree.\n\n## Important Warnings
-
-- **Low cohesion detected in Domain Cluster 1** — Cluster 1 (19 nodes) has a very low cohesion score (0.09). This sugges
-- **Circular dependency: app.ts ↔ whatsapproutes.ts** — Files app.ts and whatsapproutes.ts import each other, creating a circu
-
-## Project Standards
+## 📝 NOTE: 1 uncommitted file(s) in working tree.\n\n## Project Standards
 
 - convention in .gitignore
 - convention in .gitignore
-- Strengthened types Block — adds runtime type validation before use
-- Version your API from day 1 (/api/v1/)
-- Use consistent response format across all endpoints
-- Implement soft delete for important data — don't hard delete without confirmation
-- Handle timezone correctly — store UTC, display in user's timezone
-- Make layouts responsive from the start — mobile-first approach
+- convention in .gitignore
+- [.windsurfrules] NEVER use TailwindCSS. Only use vanilla CSS.
+- [CLAUDE.md] Always add empty states ("No items yet" with call-to-action)
+- [CLAUDE.md] Disable submit button during form submission — prevent double-submit
+- [CLAUDE.md] Make layouts responsive from the start — mobile-first approach
+- [CLAUDE.md] Handle timezone correctly — store UTC, display in user's timezone
 
 ## Learned Patterns
 
