@@ -1,8 +1,8 @@
 {
   "project": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.553Z",
-    "observationCount": 791,
+    "lastGenerated": "2026-05-01T02:24:17.008Z",
+    "observationCount": 793,
     "skillCount": 0,
     "domain": "project",
     "triggerGlobs": [
@@ -12,7 +12,7 @@
   },
   "config": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.553Z",
+    "lastGenerated": "2026-05-01T02:24:17.009Z",
     "observationCount": 78,
     "skillCount": 0,
     "domain": "config",
@@ -26,7 +26,7 @@
   },
   "convention": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.554Z",
+    "lastGenerated": "2026-05-01T02:24:17.010Z",
     "observationCount": 0,
     "skillCount": 14,
     "domain": "convention",
@@ -37,7 +37,7 @@
   },
   "gotcha": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.555Z",
+    "lastGenerated": "2026-05-01T02:24:17.010Z",
     "observationCount": 0,
     "skillCount": 9,
     "domain": "gotcha",
@@ -48,7 +48,7 @@
   },
   "typescript": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.554Z",
+    "lastGenerated": "2026-05-01T02:24:17.009Z",
     "observationCount": 2,
     "skillCount": 0,
     "domain": "typescript",
@@ -60,7 +60,7 @@
   },
   "java": {
     "enabled": true,
-    "lastGenerated": "2026-05-01T01:12:01.553Z",
+    "lastGenerated": "2026-05-01T02:24:17.008Z",
     "observationCount": 2,
     "skillCount": 0,
     "domain": "java",
