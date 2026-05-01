@@ -79,15 +79,39 @@ export class AttendanceService {
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             );
 
-            // Block heavy resources — SPADA loads hundreds of images/fonts/CSS
+            // Block heavy resources — SPADA loads hundreds of images/fonts/CSS/JS
             await this.page.setRequestInterception(true);
             this.page.on('request', (req) => {
                 const type = req.resourceType();
+                const url = req.url().toLowerCase();
+
+                // Block images, CSS, fonts, media entirely
                 if (['image', 'stylesheet', 'font', 'media', 'texttrack', 'manifest'].includes(type)) {
                     req.abort();
-                } else {
-                    req.continue();
+                    return;
                 }
+
+                // Block heavy JS libraries that freeze Chrome on VPS
+                if (type === 'script' && (
+                    url.includes('mathjax') ||
+                    url.includes('yui') ||
+                    url.includes('analytics') ||
+                    url.includes('beacon') ||
+                    url.includes('chat') ||
+                    url.includes('notification') ||
+                    url.includes('h5p') ||
+                    url.includes('video') ||
+                    url.includes('atto') ||
+                    url.includes('editor') ||
+                    url.includes('tooltip') ||
+                    url.includes('popover') ||
+                    url.includes('loglevel')
+                )) {
+                    req.abort();
+                    return;
+                }
+
+                req.continue();
             });
 
             // Set aggressive timeouts per-page
@@ -413,14 +437,8 @@ export class AttendanceService {
             }
 
         } catch (error) {
-            const errMsg = String(error);
-            // If it's a protocol timeout, the submission might have actually worked
-            if (errMsg.includes('ProtocolError') || errMsg.includes('timed out')) {
-                console.warn('[Attendance] Protocol timeout during submission — treating as partial success');
-                return { found: true, submitted: true, message: 'Attendance likely submitted (protocol timeout, cannot verify)' };
-            }
-            console.error('[Attendance] Error submitting attendance:', error);
-            return { found: false, submitted: false, message: `Error: ${error}` };
+            console.error('[Attendance] Fatal error in submitAttendance:', error);
+            return { found: false, submitted: false, message: `Fatal error: ${error}` };
         }
     }
 

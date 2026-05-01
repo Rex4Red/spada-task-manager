@@ -1,6 +1,6 @@
 ---
 name: project
-description: "Project for spada-task-manager. 56 gotchas, 566 conventions, 1 fixes."
+description: "Project for spada-task-manager. 56 gotchas, 634 conventions, 1 fixes."
 domain: project
 triggers:
   - glob: "**/*"
@@ -10,7 +10,7 @@ enabled: true
 
 # Project
 
-Auto-compiled from **721 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
+Auto-compiled from **791 real patterns** in **spada-task-manager**. This skill is auto-routed to agents when working on project files.
 
 ## ⚠️ Anti-Patterns & Gotchas
 
@@ -107,10 +107,11 @@ Auto-compiled from **721 real patterns** in **spada-task-manager**. This skill i
 - 📐 **Implement retry logic for transient failures with exponential backoff** — Implement retry logic for transient failures with exponential backoff
 - 📐 **Return proper HTTP status codes — not 500 for everything** — Return proper HTTP status codes — not 500 for everything
 - 📐 **Always wrap async/await in try/catch** — Always wrap async/await in try/catch
-- 📐 **Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)** — Hash passwords with cost factor ≥12 (bcrypt) or memory ≥64MB (argon2)
-- 📐 **Always pull before push to avoid conflicts** — Always pull before push to avoid conflicts
-- 📐 **Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"** — Use meaningful commit messages in imperative mood: "Add feature" not "Added feature"
-- 📐 **Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore** — Don't commit node_modules, __pycache__, build/, dist/ — add to .gitignore
+- 📐 **Implement rate limiting on login endpoints to prevent brute force** — Implement rate limiting on login endpoints to prevent brute force
+- 📐 **Use constants for magic numbers and strings** — Use constants for magic numbers and strings
+- 📐 **Handle edge cases: empty arrays, empty strings, null, undefined, 0, NaN** — Handle edge cases: empty arrays, empty strings, null, undefined, 0, NaN
+- 📐 **Keep functions under 50 lines and single-responsibility** — Keep functions under 50 lines and single-responsibility
+- 📐 **Remove unused imports, variables, and dead code** — Remove unused imports, variables, and dead code
 - 📐 **convention in .gitignore** — File updated (external): .gitignore
 
 Content summary (16 lines):
@@ -128,6 +129,6 @@ CLAUDE.md
 - 📐 **Disable submit button during form submission — prevent double-submit** — Disable submit button during form submission — prevent double-submit
 - 📐 **Always add empty states ("No items yet" with call-to-action)** — Always add empty states ("No items yet" with call-to-action)
 - 📐 **Always add error states with retry button — not just blank screen** — Always add error states with retry button — not just blank screen
-- 📐 **Always add loading states for async operations (skeleton, spinner)** —
+- 📐 **Always add loading states for a
 
 ... [Truncated — see individual observations for full content]
