@@ -28,6 +28,7 @@ const Layout = ({ children }) => {
                 <div className="flex items-center gap-2">
                     <img src="/logo_upn.png" alt="UPN Logo" className="size-8 object-contain" />
                     <h1 className="text-white text-base font-bold">Spada Task Manager</h1>
+                    <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">v2.1</span>
                 </div>
                 <button
                     onClick={handleLogout}
@@ -44,7 +45,10 @@ const Layout = ({ children }) => {
                     <div className="flex items-center gap-3 px-2">
                         <img src="/logo_upn.png" alt="UPN Logo" className="size-10 object-contain" />
                         <div className="flex flex-col">
-                            <h1 className="text-white text-lg font-bold leading-tight">Spada Task Manager</h1>
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-white text-lg font-bold leading-tight">Spada Task Manager</h1>
+                                <span className="text-[10px] font-medium text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full">v2.1</span>
+                            </div>
                             <p className="text-[#9dabb9] text-xs font-normal">UPN "Veteran" Yogyakarta</p>
                         </div>
                     </div>
