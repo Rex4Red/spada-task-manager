@@ -27,13 +27,13 @@ export class AttendanceService {
     }
 
     /**
-     * Initialize the browser instance with aggressive resource blocking
+     * Initialize the browser instance - always creates a fresh browser
      */
     private async init() {
         // Always close previous browser to avoid detached frame issues
         await this.close();
 
-        console.log('[Attendance] Launching Puppeteer (lightweight mode)...');
+        console.log('[Attendance] Launching Puppeteer...');
         this.browser = await puppeteer.launch({
             headless: true,
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
@@ -55,70 +55,21 @@ export class AttendanceService {
                 '--no-first-run',
                 '--safebrowsing-disable-auto-update',
                 '--disable-features=IsolateOrigins,site-per-process',
-                '--js-flags=--max-old-space-size=128',
-                '--window-size=800,600',
-                '--single-process',
+                '--js-flags=--max-old-space-size=256',
+                '--window-size=1280,720',
+                '--renderer-process-limit=1',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
                 '--disable-features=dbus',
-                '--disable-breakpad',
-                '--renderer-process-limit=1',
-                '--disable-client-side-phishing-detection',
-                '--disable-component-update',
-                '--disable-domain-reliability',
-                '--disable-hang-monitor',
-                '--disable-ipc-flooding-protection',
-                '--disable-popup-blocking',
-                '--disable-prompt-on-repost',
-                '--no-zygote',
-                '--blink-settings=imagesEnabled=false'
+                '--disable-breakpad'
             ],
-            defaultViewport: { width: 800, height: 600 },
+            defaultViewport: { width: 1280, height: 720 },
             timeout: 60000
         });
         this.page = await this.browser.newPage();
         await this.page.setUserAgent(
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         );
-
-        // Block heavy resources — but NOT on login page (login needs JS/CSS)
-        await this.page.setRequestInterception(true);
-        this.page.on('request', (req) => {
-            const type = req.resourceType();
-            const url = req.url().toLowerCase();
-
-            // NEVER block on login page — it needs JS/CSS to function
-            if (url.includes('/login/')) {
-                req.continue();
-                return;
-            }
-
-            // Block images, fonts, media on non-login pages
-            if (['image', 'font', 'media', 'texttrack', 'manifest'].includes(type)) {
-                req.abort();
-                return;
-            }
-
-            // Block heavy JS libraries that freeze Chrome on VPS
-            if (type === 'script' && (
-                url.includes('mathjax') ||
-                url.includes('analytics') ||
-                url.includes('beacon') ||
-                url.includes('h5p') ||
-                url.includes('atto') ||
-                url.includes('editor') ||
-                url.includes('loglevel')
-            )) {
-                req.abort();
-                return;
-            }
-
-            req.continue();
-        });
-
-        // Set aggressive timeouts per-page
-        this.page.setDefaultTimeout(30000);
-        this.page.setDefaultNavigationTimeout(30000);
     }
 
     /**
