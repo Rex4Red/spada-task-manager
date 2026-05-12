@@ -1,6 +1,36 @@
+# ======== Stage 1: Build ========
+FROM node:20-slim AS builder
+
+WORKDIR /app
+
+# Build Backend
+COPY package*.json ./
+RUN npm install
+
+COPY src/ ./src/
+COPY prisma/ ./prisma/
+COPY tsconfig.json ./
+
+RUN npx prisma generate
+RUN npm run build
+
+# Build Frontend
+COPY frontend/package*.json ./frontend/
+RUN cd frontend && npm install
+
+COPY frontend/ ./frontend/
+
+ARG VITE_API_BASE_URL=
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+RUN cd frontend && npm run build
+
+# Move frontend dist
+RUN cp -r frontend/dist ./dist/public
+
+# ======== Stage 2: Runtime ========
 FROM node:20-slim
 
-# Install Chrome (still needed for attendance auto-click only)
+# Install Chrome (for attendance auto-click only)
 RUN apt-get update \
   && apt-get install -y wget gnupg \
   && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
@@ -10,43 +40,21 @@ RUN apt-get update \
   --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
-# Config env to use installed chrome (for attendance service only)
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 ENV DBUS_SESSION_BUS_ADDRESS=/dev/null
 
 WORKDIR /app
 
-# ========== Build Backend ==========
-COPY package*.json ./
-RUN npm install
+# Copy only production dependencies and built files from builder
+COPY --from=builder /app/package*.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/dist ./dist/
+COPY --from=builder /app/prisma ./prisma/
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
-COPY src/ ./src/
-COPY prisma/ ./prisma/
-COPY tsconfig.json ./
-
-# Generate Prisma Client
 RUN npx prisma generate
 
-# Build TypeScript
-RUN npm run build
-
-# ========== Build Frontend ==========
-COPY frontend/package*.json ./frontend/
-RUN cd frontend && npm install
-
-COPY frontend/ ./frontend/
-
-# Build frontend with API URL (same origin, no need for external URL)
-ARG VITE_API_BASE_URL=
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN cd frontend && npm run build
-
-# Move frontend dist to where backend can serve it
-RUN cp -r frontend/dist ./dist/public
-
-# Expose port
 EXPOSE 7860
-
-# Start
 CMD [ "npm", "start" ]
